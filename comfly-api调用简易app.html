@@ -987,41 +987,60 @@
             if (validImages.length < 14) {
                 const addSlot = document.createElement('div');
                 addSlot.className = 'image-slot pastable-indicator relative border-2 border-dashed border-slate-600 rounded-xl overflow-hidden cursor-pointer bg-slate-800/30 hover:bg-slate-800/50 hover:border-blue-500 group transition-all';
-                addSlot.onclick = () => addNewImageSlot();
                 addSlot.ondragover = (e) => { e.preventDefault(); addSlot.classList.add('dragover'); };
                 addSlot.ondragleave = (e) => { e.preventDefault(); addSlot.classList.remove('dragover'); };
                 addSlot.ondrop = (e) => handleDropOnAddButton(e);
                 // 粘贴监听需要 activeSlot，设置为特殊值 -1 表示"添加新位置"
                 addSlot.onmouseenter = () => activeSlot = -1;
                 addSlot.onmouseleave = () => activeSlot = null;
+                
+                // 创建隐藏的 input file 元素
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.id = 'file-add-new';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+                fileInput.onchange = (e) => handleAddNewImage(e);
+                
+                addSlot.onclick = () => fileInput.click();
                 addSlot.innerHTML = `
                     <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
                         <svg class="w-10 h-10 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span class="text-xs">添加图片</span>
                     </div>
                 `;
+                addSlot.appendChild(fileInput);
                 grid.appendChild(addSlot);
             }
         }
         
-        // 添加新图片位置
-        function addNewImageSlot() {
+        // 处理点击添加按钮后的文件选择
+        async function handleAddNewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
             const validCount = imageFiles.filter(f => f !== null).length;
             if (validCount >= 14) {
                 showMessage('最多只能上传14张参考图', 'error');
                 return;
             }
+            
             // 找到第一个空位（null）或在数组末尾添加
-            let newIndex = imageFiles.findIndex(f => f === null);
-            if (newIndex === -1) {
-                newIndex = imageFiles.length;
+            let targetIndex = imageFiles.findIndex(f => f === null);
+            if (targetIndex === -1) {
+                targetIndex = imageFiles.length;
                 imageFiles.push(null);
             }
-            renderImageGrid();
-            // 自动触发文件选择
-            setTimeout(() => {
-                document.getElementById(`file-${newIndex}`)?.click();
-            }, 10);
+            
+            try {
+                const compressedFile = await compressImage(file);
+                imageFiles[targetIndex] = compressedFile;
+                renderImageGrid();
+            } catch (error) {
+                console.error('Image compression failed:', error);
+                imageFiles[targetIndex] = file;
+                renderImageGrid();
+            }
         }
         
         // 拖拽到添加按钮
