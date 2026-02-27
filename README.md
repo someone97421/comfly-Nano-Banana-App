@@ -1,3 +1,5 @@
+<img width="1605" height="1546" alt="image" src="https://github.com/user-attachments/assets/0da37a97-822a-4113-abeb-00f80ff6d6f2" />  
+
 # 🎨 Nano-Banana AI 图像生成器
 
 这是一个基于 HTML5 的轻量级单文件 Web 应用，专门用于通过 API 调用 **Gemini** 或 **Nano-banana-2** 模型进行 AI 图像生成。它提供了直观的界面来处理多图参考生成任务。
