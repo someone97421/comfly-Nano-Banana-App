@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nano-Banana AI 图像生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .image-slot {
+            transition: all 0.3s ease;
+            aspect-ratio: 1;
+        }
+        .image-slot:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+        }
+        .image-slot.active {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .image-slot.dragover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.2);
+            transform: scale(1.05);
+        }
+        .img-tag {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            pointer-events: none;
+            z-index: 5;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pastable-indicator { position: relative; }
+        .pastable-indicator::after {
+            content: 'Ctrl+V';
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 9px;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 4px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            color: #94a3b8;
+        }
+        .pastable-indicator:hover::after { opacity: 1; }
+        input[type="file"] { display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+        
+        /* 富文本编辑器样式 */
+        .prompt-editor {
+            min-height: 120px;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .prompt-editor:empty::before {
+            content: attr(data-placeholder);
+            color: #64748b;
+            pointer-events: none;
+        }
+        
+        /* 交互式引用标签 (Chip) */
+        .mention-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(37, 99, 235, 0.2);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            vertical-align: middle;
+            margin: 0 2px;
+            transition: all 0.2s;
+        }
+        .mention-chip:hover {
+            background: rgba(37, 99, 235, 0.4);
+            border-color: rgba(96, 165, 250, 0.6);
+        }
+
+        /* 弹出式引用选择面板 */
+        .mention-popup {
+            position: absolute;
+            width: 220px;
+            max-height: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px) scale(0.95);
+            transition: all 0.2s ease;
+        }
+        .mention-popup.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+        .mention-popup-header {
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+            background: rgba(30, 41, 59, 0.9);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .mention-popup-header .hint {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 400;
+        }
+        .mention-popup-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+        .mention-popup-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.15s;
+            border: 2px solid transparent;
+        }
+        .mention-popup-item:hover, .mention-popup-item.selected {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+        }
+        .mention-popup-item.selected {
+            background: rgba(59, 130, 246, 0.35);
+        }
+        .mention-popup-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            display: block;
+            background: rgba(30, 41, 59, 0.8);
+        }
+        .mention-popup-item span {
+            font-size: 13px;
+            color: #60a5fa;
+            font-family: monospace;
+            font-weight: 600;
+        }
+        .mention-popup-empty {
+            padding: 24px 16px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .mention-popup-empty .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+        
+        .textarea-wrapper {
+            position: relative;
+        }
+        .mention-btn {
+            position: absolute;
+            right: 12px;
+            top: 8px;
+            background: #334155;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+            font-weight: 600;
+        }
+        .mention-btn:hover, .mention-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        /* 高级选项抽屉 */
+        .advanced-drawer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .advanced-drawer.open {
+            max-height: 500px;
+        }
+        .drawer-toggle {
+            transition: transform 0.3s ease;
+        }
+        .drawer-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        /* 历史记录样式 */
+        .history-item {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .history-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .history-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .history-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .history-item:hover .history-overlay {
+            opacity: 1;
+        }
+        .history-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s;
+        }
+        .history-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        .history-time {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 2px 4px;
+            border-radius: 4px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 图片预览模态框 */
+        .image-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .image-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .image-modal-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* 结果图预览放大镜按钮 */
+        .result-zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .result-zoom-btn:hover {
+            background: rgba(59, 130, 246, 1);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 custom-scrollbar">
+
+    <!-- 图片预览模态框 -->
+    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+        <div class="image-modal-close">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </div>
+        <img id="modalImage" src="" alt="Preview" onclick="event.stopPropagation()">
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        <div class="text-center space-y-2 mb-8">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Nano-Banana AI 图像生成器
+            </h1>
+            <p class="text-slate-400">支持 Gemini / Nano-banana-2 多图参考生成 | 输入 @ 引用图像</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 space-y-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    API 配置
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="saveConfig()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        保存配置
+                    </button>
+                    <button onclick="document.getElementById('configFile').click()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        导入配置
+                    </button>
+                    <input type="file" id="configFile" accept=".json" onchange="importConfig(event)">
+                    <button onclick="exportConfig()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        导出配置
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-300">API Base URL</label>
+                    <input type="text" id="baseUrl" value="https://ai.comfly.chat/v1" 
+                           class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-300">API Key</label>
+                    <input type="password" id="apiKey" 
+                           class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-300">模型名称</label>
+                    <input type="text" id="modelName" value="gemini-3.1-flash-image-preview" 
+                           class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-1 space-y-4">
+                <div class="glass-panel rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">参考图片 (最多14张)</h2>
+                        <button onclick="clearAllImages()" class="text-xs text-red-400 hover:text-red-300 transition-colors">清空全部</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3" id="imageGrid">
+                        <!-- Slots generated by JS -->
+                    </div>
+                    <p class="text-xs text-slate-500 mt-3 text-center">提示：鼠标悬停后按 Ctrl+V 粘贴图片</p>
+                </div>
+
+                <!-- 历史记录 -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            生成历史
+                        </h2>
+                        <span id="historyCount" class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">0</span>
+                    </div>
+                    <div id="historyGrid" class="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto custom-scrollbar">
+                        <div class="col-span-2 text-center text-slate-500 py-8 text-sm">
+                            暂无历史记录
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-4">
+                <div class="glass-panel rounded-2xl p-6 space-y-6">
+                    <h2 class="text-lg font-semibold mb-4">生成参数</h2>
+                    
+                    <!-- Prompt with Mention Popup -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-300 flex justify-between items-center">
+                            <span>提示词 (Prompt)</span>
+                            <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">输入 @ 快速引用图片</span>
+                        </label>
+                        <div class="textarea-wrapper">
+                            <div id="prompt" class="prompt-editor flex-1 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm custom-scrollbar pr-12" 
+                                 contenteditable="true" 
+                                 data-placeholder="描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中"></div>
+                            
+                            <button type="button" onclick="toggleMentionPopup()" class="mention-btn" id="mentionBtn" title="插入图片引用">@</button>
+                            
+                            <!-- 弹出式引用选择面板 -->
+                            <div id="mentionPopup" class="mention-popup">
+                                <div class="mention-popup-header">
+                                    <span>选择图片引用</span>
+                                    <span class="hint">ESC 关闭</span>
+                                </div>
+                                <div class="mention-popup-list custom-scrollbar" id="mentionPopupList">
+                                    <!-- 动态填充 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-300">宽高比 (Aspect Ratio)</label>
+                            <select id="aspectRatio" class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
+                                <option value="">默认 (Default)</option>
+                                <option value="1:1">1:1 (正方形)</option>
+                                <option value="2:3">2:3 (纵向)</option>
+                                <option value="3:2">3:2 (横向)</option>
+                                <option value="3:4">3:4 (纵向)</option>
+                                <option value="4:3">4:3 (横向)</option>
+                                <option value="4:5">4:5 (纵向)</option>
+                                <option value="5:4">5:4 (横向)</option>
+                                <option value="9:16">9:16 (手机竖屏)</option>
+                                <option value="16:9">16:9 (宽屏)</option>
+                                <option value="21:9">21:9 (超宽屏)</option>
+                                <option value="1:4">1:4 (长图/海报)</option>
+                                <option value="4:1">4:1 (Banner)</option>
+                                <option value="1:8">1:8 (极长图)</option>
+                                <option value="8:1">8:1 (极宽图)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-300">分辨率 (Image Size)</label>
+                            <select id="resolution" class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
+                                <option value="">默认 (Auto)</option>
+                                <option value="1K">1K (1024×1024)</option>
+                                <option value="2K">2K (2048×2048)</option>
+                                <option value="4K">4K (4096×4096)</option>
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1">* 仅 nano-banana-2 支持分辨率参数</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-300">返回格式</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="responseFormat" value="url" checked class="accent-blue-500">
+                                <span class="text-sm text-slate-400">URL 链接</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="responseFormat" value="b64_json" class="accent-blue-500">
+                                <span class="text-sm text-slate-400">Base64 (JSON)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 高级选项抽屉 -->
+                    <div class="border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleAdvancedDrawer()" class="w-full px-4 py-3 bg-slate-800/50 flex items-center justify-between hover:bg-slate-800/70 transition-colors">
+                            <span class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                高级选项
+                            </span>
+                            <svg id="drawerToggleIcon" class="w-5 h-5 text-slate-400 drawer-toggle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="advancedDrawer" class="advanced-drawer">
+                            <div class="p-4 space-y-4 bg-slate-800/30">
+                                <!-- 历史记录设置 -->
+                                <div class="pb-4 border-b border-slate-700/50">
+                                    <h3 class="text-sm font-medium text-slate-400 mb-3">历史记录设置</h3>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex-1 mr-4">
+                                            <label class="text-xs text-slate-500 mb-1 block">最大保存数量</label>
+                                            <input type="number" id="historyLimit" value="20" min="5" max="100"
+                                                   class="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
+                                        </div>
+                                        <button onclick="clearHistory()" class="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm transition-colors flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            清除历史
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 图片压缩设置 -->
+                                <div>
+                                    <h3 class="text-sm font-medium text-slate-400 mb-3">图片压缩设置</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-sm text-slate-300">启用图片压缩</label>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="enableCompression" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                            </label>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="text-xs text-slate-500 mb-1 block">长边限制 (px)</label>
+                                                <input type="number" id="maxEdgeLength" value="2560" min="512" max="8192"
+                                                       class="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-slate-500 mb-1 block">JPEG 质量 (0-1)</label>
+                                                <input type="number" id="jpegQuality" value="0.9" min="0.1" max="1" step="0.1"
+                                                       class="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
+                                                <p class="text-xs text-slate-600 mt-1">默认 0.9，1.0 为不压缩</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="generateImage()" id="generateBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span id="btnText">生成图像</span>
+                        <div id="btnLoader" class="loader hidden"></div>
+                    </button>
+
+                    <div id="messageArea" class="hidden rounded-lg p-4 text-sm"></div>
+                </div>
+
+                <div id="resultArea" class="glass-panel rounded-2xl p-6 hidden">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        生成结果
+                    </h2>
+                    <div class="relative group">
+                        <img id="resultImage" class="w-full rounded-lg shadow-2xl" />
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-4">
+                            <button onclick="openImageModal(document.getElementById('resultImage').src)" class="result-zoom-btn" title="放大预览">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                            </button>
+                            <a id="downloadLink" href="#" target="_blank" download class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                下载原图
+                            </a>
+                        </div>
+                    </div>
+                    <div id="jsonResult" class="mt-4 p-4 bg-slate-900 rounded-lg overflow-x-auto text-xs font-mono text-slate-400 hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let activeSlot = null;
+        const imageFiles = []; // 动态数组，不预留固定位置
+        let isMentionPopupOpen = false;
+        let editingChip = null;
+        let selectedIndex = -1;
+        let popupKeyword = '';  // 用于过滤的关键词
+        let keyboardSelectedIndex = -1;  // 键盘选择的索引
+        let savedRange = null;  // 保存的光标位置
+        
+        // IndexedDB 相关
+        const DB_NAME = 'NanoBananaDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'history';
+        let db = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initImageGrid();
+            loadSavedConfig();
+            setupPasteListener();
+            setupMentionSystem();
+            initDB().then(() => {
+                loadHistory();
+            });
+        });
+
+        // ==================== IndexedDB 操作 ====================
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                };
+            });
+        }
+
+        function addHistoryItem(imageData, prompt) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Database not initialized'));
+                    return;
+                }
+                
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                
+                const item = {
+                    imageData: imageData,
+                    prompt: prompt,
+                    timestamp: Date.now()
+                };
+                
+                const request = store.add(item);
+                request.onsuccess = () => {
+                    cleanupOldHistory().then(() => resolve(request.result));
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function getAllHistory() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Database not initialized'));
+                    return;
+                }
+                
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const index = store.index('timestamp');
+                const request = index.openCursor(null, 'prev');
+                
+                const results = [];
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        results.push(cursor.value);
+                        cursor.continue();
+                    } else {
+                        resolve(results);
+                    }
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function deleteHistoryItem(id) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Database not initialized'));
+                    return;
+                }
+                
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function clearAllHistory() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Database not initialized'));
+                    return;
+                }
+                
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function cleanupOldHistory() {
+            const limit = parseInt(document.getElementById('historyLimit').value) || 20;
+            const all = await getAllHistory();
+            
+            if (all.length > limit) {
+                const toDelete = all.slice(limit);
+                for (const item of toDelete) {
+                    await deleteHistoryItem(item.id);
+                }
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const history = await getAllHistory();
+                const grid = document.getElementById('historyGrid');
+                const countEl = document.getElementById('historyCount');
+                
+                countEl.textContent = history.length;
+                
+                if (history.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-2 text-center text-slate-500 py-8 text-sm">
+                            暂无历史记录
+                        </div>
+                    `;
+                    return;
+                }
+                
+                grid.innerHTML = history.map(item => `
+                    <div class="history-item">
+                        <img src="${item.imageData}" alt="Generated" loading="lazy">
+                        <div class="history-overlay">
+                            <button class="history-btn" onclick="openImageModal('${item.imageData}')" title="放大预览">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                            </button>
+                            <button class="history-btn" onclick="downloadHistoryImage(${item.id})" title="下载">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            </button>
+                            <button class="history-btn" onclick="deleteHistoryItem(${item.id}).then(() => loadHistory())" title="删除">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                        <div class="history-time">${formatTime(item.timestamp)}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load history:', error);
+            }
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+            if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`;
+            
+            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+        }
+
+        async function downloadHistoryImage(id) {
+            try {
+                const history = await getAllHistory();
+                const item = history.find(h => h.id === id);
+                if (item) {
+                    const link = document.createElement('a');
+                    link.href = item.imageData;
+                    link.download = `generated-${Date.now()}.png`;
+                    link.click();
+                }
+            } catch (error) {
+                console.error('Failed to download:', error);
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm('确定要清除所有历史记录吗？此操作不可恢复。')) return;
+            
+            try {
+                await clearAllHistory();
+                await loadHistory();
+                showMessage('历史记录已清除', 'success');
+            } catch (error) {
+                showMessage('清除历史记录失败', 'error');
+            }
+        }
+
+        // ==================== 图片预览模态框 ====================
+        function openImageModal(src) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImage');
+            img.src = src;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // ==================== 高级选项抽屉 ====================
+        function toggleAdvancedDrawer() {
+            const drawer = document.getElementById('advancedDrawer');
+            const icon = document.getElementById('drawerToggleIcon');
+            drawer.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+
+        // ==================== 图片压缩 ====================
+        async function compressImage(file) {
+            const enableCompression = document.getElementById('enableCompression').checked;
+            if (!enableCompression) {
+                return file;
+            }
+            
+            const maxEdge = parseInt(document.getElementById('maxEdgeLength').value) || 2560;
+            const quality = parseFloat(document.getElementById('jpegQuality').value) || 0.9;
+            
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    
+                    let { width, height } = img;
+                    const maxDim = Math.max(width, height);
+                    
+                    // 如果图片尺寸已经小于限制，且质量为1.0，直接返回原文件
+                    if (maxDim <= maxEdge && quality >= 1.0) {
+                        resolve(file);
+                        return;
+                    }
+                    
+                    // 计算缩放比例
+                    if (maxDim > maxEdge) {
+                        const scale = maxEdge / maxDim;
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 使用高质量缩放
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Compression failed'));
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Failed to load image'));
+                };
+                
+                img.src = url;
+            });
+        }
+
+        // Initialize Image Grid - 动态渲染，只显示已上传图片和添加按钮
+        function initImageGrid() {
+            renderImageGrid();
+        }
+        
+        // 渲染图片网格 - 只显示有图片的项 + 一个添加按钮
+        function renderImageGrid() {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+            
+            // 渲染已上传的图片（只渲染非null的项）
+            const validImages = imageFiles.filter(f => f !== null);
+            
+            for(let i=0; i<imageFiles.length; i++) {
+                const file = imageFiles[i];
+                if (!file) continue; // 跳过空位
+                
+                const slot = document.createElement('div');
+                slot.className = 'image-slot pastable-indicator relative border-2 border-dashed border-slate-600 rounded-xl overflow-hidden cursor-pointer bg-slate-800/30 hover:bg-slate-800/50 group';
+                slot.id = `slot-${i}`;
+                slot.ondragover = (e) => handleDragOver(e, i);
+                slot.ondragleave = (e) => handleDragLeave(e, i);
+                slot.ondrop = (e) => handleDrop(e, i);
+                slot.onmouseenter = () => activeSlot = i;
+                slot.onmouseleave = () => activeSlot = null;
+                
+                // 使用FileReader来显示图片（避免重复创建ObjectURL）
+                const reader = new FileReader();
+                reader.onload = ((idx, slotElement) => (e) => {
+                    const img = slotElement.querySelector('img');
+                    if (img) img.src = e.target.result;
+                })(i, slot);
+                reader.readAsDataURL(file);
+                
+                slot.innerHTML = `
+                    <input type="file" id="file-${i}" accept="image/*" onchange="handleFileSelect(event, ${i})">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-slate-400 transition-colors hidden" id="placeholder-${i}">
+                        <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span class="text-xs">点击或拖拽</span>
+                    </div>
+                    <img id="preview-${i}" class="absolute inset-0 w-full h-full object-cover" />
+                    <span class="img-tag" id="tag-${i}">@img${i+1}</span>
+                    <button onclick="removeImage(event, ${i})" id="remove-${i}" class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white text-xs z-10 shadow-lg">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                `;
+                grid.appendChild(slot);
+            }
+            
+            // 如果还没满14个，显示添加按钮
+            if (validImages.length < 14) {
+                const addSlot = document.createElement('div');
+                addSlot.className = 'image-slot pastable-indicator relative border-2 border-dashed border-slate-600 rounded-xl overflow-hidden cursor-pointer bg-slate-800/30 hover:bg-slate-800/50 hover:border-blue-500 group transition-all';
+                addSlot.onclick = () => addNewImageSlot();
+                addSlot.ondragover = (e) => { e.preventDefault(); addSlot.classList.add('dragover'); };
+                addSlot.ondragleave = (e) => { e.preventDefault(); addSlot.classList.remove('dragover'); };
+                addSlot.ondrop = (e) => handleDropOnAddButton(e);
+                // 粘贴监听需要 activeSlot，设置为特殊值 -1 表示"添加新位置"
+                addSlot.onmouseenter = () => activeSlot = -1;
+                addSlot.onmouseleave = () => activeSlot = null;
+                addSlot.innerHTML = `
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
+                        <svg class="w-10 h-10 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span class="text-xs">添加图片</span>
+                    </div>
+                `;
+                grid.appendChild(addSlot);
+            }
+        }
+        
+        // 添加新图片位置
+        function addNewImageSlot() {
+            const validCount = imageFiles.filter(f => f !== null).length;
+            if (validCount >= 14) {
+                showMessage('最多只能上传14张参考图', 'error');
+                return;
+            }
+            // 找到第一个空位（null）或在数组末尾添加
+            let newIndex = imageFiles.findIndex(f => f === null);
+            if (newIndex === -1) {
+                newIndex = imageFiles.length;
+                imageFiles.push(null);
+            }
+            renderImageGrid();
+            // 自动触发文件选择
+            setTimeout(() => {
+                document.getElementById(`file-${newIndex}`)?.click();
+            }, 10);
+        }
+        
+        // 拖拽到添加按钮
+        async function handleDropOnAddButton(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                const validCount = imageFiles.filter(f => f !== null).length;
+                if (validCount >= 14) {
+                    showMessage('最多只能上传14张参考图', 'error');
+                    return;
+                }
+                // 找到第一个空位或在末尾添加
+                let newIndex = imageFiles.findIndex(f => f === null);
+                if (newIndex === -1) {
+                    newIndex = imageFiles.length;
+                    imageFiles.push(null);
+                }
+                
+                try {
+                    const compressedFile = await compressImage(files[0]);
+                    imageFiles[newIndex] = compressedFile;
+                    renderImageGrid();
+                } catch (error) {
+                    console.error('Image compression failed:', error);
+                    imageFiles[newIndex] = files[0];
+                    renderImageGrid();
+                }
+            }
+        }
+
+        // 弹出式 Mention 面板
+        function toggleMentionPopup() {
+            if (isMentionPopupOpen) {
+                closeMentionPopup();
+            } else {
+                openMentionPopup();
+            }
+        }
+
+        function openMentionPopup(keyword = '') {
+            const popup = document.getElementById('mentionPopup');
+            const btn = document.getElementById('mentionBtn');
+            const list = document.getElementById('mentionPopupList');
+            const editor = document.getElementById('prompt');
+            
+            // 保存当前光标位置
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                savedRange = sel.getRangeAt(0).cloneRange();
+            }
+            
+            popupKeyword = keyword.toLowerCase();
+            keyboardSelectedIndex = -1;
+            
+            // 填充列表
+            renderMentionList();
+            
+            // 定位弹出框
+            positionPopup();
+            
+            popup.classList.add('active');
+            btn.classList.add('active');
+            isMentionPopupOpen = true;
+            
+            // 聚焦到编辑器
+            editor.focus();
+        }
+
+        function positionPopup() {
+            const popup = document.getElementById('mentionPopup');
+            const editor = document.getElementById('prompt');
+            const editorRect = editor.getBoundingClientRect();
+            
+            // 获取光标位置
+            const sel = window.getSelection();
+            let cursorX = editorRect.left + 20;
+            let cursorY = editorRect.top + 50;
+            
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                const rects = range.getClientRects();
+                if (rects.length > 0) {
+                    const rect = rects[rects.length - 1];
+                    cursorX = rect.left;
+                    cursorY = rect.bottom + 5;
+                }
+            }
+            
+            // 确保不超出视口
+            const popupWidth = 220;
+            const popupHeight = 280;
+            
+            if (cursorX + popupWidth > window.innerWidth) {
+                cursorX = window.innerWidth - popupWidth - 20;
+            }
+            if (cursorY + popupHeight > window.innerHeight) {
+                cursorY = editorRect.top - popupHeight - 5;
+            }
+            
+            popup.style.left = (cursorX - editorRect.left) + 'px';
+            popup.style.top = (cursorY - editorRect.top) + 'px';
+        }
+
+        function renderMentionList() {
+            const list = document.getElementById('mentionPopupList');
+            list.innerHTML = '';
+            
+            let hasImages = false;
+            let visibleCount = 0;
+            
+            // 遍历已上传的图片
+            for (let i = 0; i < imageFiles.length; i++) {
+                if (imageFiles[i]) {
+                    const tagName = `img${i+1}`;
+                    // 过滤
+                    if (popupKeyword && !tagName.toLowerCase().includes(popupKeyword)) {
+                        continue;
+                    }
+                    
+                    hasImages = true;
+                    const item = document.createElement('div');
+                    item.className = 'mention-popup-item';
+                    item.dataset.index = i;
+                    item.dataset.visibleIndex = visibleCount;
+                    
+                    const previewSrc = URL.createObjectURL(imageFiles[i]);
+                    item.innerHTML = `
+                        <img src="${previewSrc}" alt="img${i+1}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%231e293b%22 width=%2240%22 height=%2240%22/><text fill=%22%2360a5fa%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22>${i+1}</text></svg>'">
+                        <span>@img${i+1}</span>
+                    `;
+                    item.onclick = () => selectImageForInsert(i);
+                    item.onmouseenter = () => {
+                        keyboardSelectedIndex = visibleCount;
+                        updateKeyboardSelection();
+                    };
+                    list.appendChild(item);
+                    visibleCount++;
+                }
+            }
+            
+            if (!hasImages) {
+                list.innerHTML = `
+                    <div class="mention-popup-empty">
+                        <div class="icon">🖼️</div>
+                        <div>请先上传<br>参考图片</div>
+                    </div>`;
+            } else if (visibleCount === 0) {
+                list.innerHTML = `
+                    <div class="mention-popup-empty">
+                        <div class="icon">🔍</div>
+                        <div>未找到匹配<br>"${popupKeyword}"</div>
+                    </div>`;
+            }
+        }
+
+        function closeMentionPopup() {
+            const popup = document.getElementById('mentionPopup');
+            const btn = document.getElementById('mentionBtn');
+            
+            popup.classList.remove('active');
+            btn.classList.remove('active');
+            isMentionPopupOpen = false;
+            editingChip = null;
+            selectedIndex = -1;
+            popupKeyword = '';
+            keyboardSelectedIndex = -1;
+            savedRange = null;
+        }
+
+        function selectImageForInsert(index) {
+            const editor = document.getElementById('prompt');
+            
+            // 标签块 HTML
+            const chipInner = `@img${index + 1} <svg style="width:12px;height:12px;margin-left:2px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+
+            if (editingChip) {
+                // 修改已有标签
+                editingChip.dataset.index = index;
+                editingChip.innerHTML = chipInner;
+            } else {
+                // 恢复焦点到编辑器
+                editor.focus();
+                
+                // 使用保存的 range，或获取当前 range
+                const sel = window.getSelection();
+                let range = savedRange;
+                
+                if (!range && sel.rangeCount > 0) {
+                    range = sel.getRangeAt(0);
+                }
+                
+                if (range) {
+                    // 移除之前的 range，使用克隆的 range
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    
+                    // 检查是否需要删除输入的@和关键词
+                    if (popupKeyword !== null || isMentionPopupOpen) {
+                        const textNode = range.startContainer;
+                        if (textNode.nodeType === Node.TEXT_NODE) {
+                            const text = textNode.textContent;
+                            const cursorPos = range.startOffset;
+                            // 查找@的位置
+                            const beforeCursor = text.substring(0, cursorPos);
+                            const atIndex = beforeCursor.lastIndexOf('@');
+                            if (atIndex !== -1) {
+                                // 删除从@到光标的内容
+                                range.setStart(textNode, atIndex);
+                                range.setEnd(textNode, cursorPos);
+                                range.deleteContents();
+                            }
+                        }
+                    }
+                    
+                    // 创建标签元素
+                    const chip = document.createElement('span');
+                    chip.className = 'mention-chip';
+                    chip.contentEditable = 'false';
+                    chip.dataset.index = index;
+                    chip.setAttribute('onclick', 'editExistingMention(event, this)');
+                    chip.innerHTML = chipInner;
+                    
+                    // 插入标签
+                    range.insertNode(chip);
+                    
+                    // 插入空格
+                    const space = document.createTextNode('\u00A0');
+                    chip.parentNode.insertBefore(space, chip.nextSibling);
+                    
+                    // 移动光标到空格后
+                    range.setStart(space, 1);
+                    range.setEnd(space, 1);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+            
+            savedRange = null;
+            closeMentionPopup();
+        }
+
+        function updateKeyboardSelection() {
+            const items = document.querySelectorAll('.mention-popup-item');
+            items.forEach((item, idx) => {
+                if (parseInt(item.dataset.visibleIndex) === keyboardSelectedIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        function setupMentionSystem() {
+            const editor = document.getElementById('prompt');
+            
+            // 粘贴纯文本
+            editor.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+
+            // 键盘事件 - 输入@时触发
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === '@') {
+                    // 延迟打开，让@字符先输入
+                    setTimeout(() => {
+                        openMentionPopup();
+                    }, 10);
+                } else if (isMentionPopupOpen) {
+                    handlePopupKeydown(e);
+                }
+            });
+            
+            // 输入事件 - 用于过滤
+            editor.addEventListener('input', function(e) {
+                if (isMentionPopupOpen) {
+                    handlePopupInput(e);
+                }
+            });
+
+            // 点击外部关闭弹出框
+            document.addEventListener('click', function(e) {
+                const popup = document.getElementById('mentionPopup');
+                const btn = document.getElementById('mentionBtn');
+                const editor = document.getElementById('prompt');
+                
+                if (!popup.contains(e.target) && e.target !== btn && e.target !== editor && !e.target.closest('.mention-chip')) {
+                    closeMentionPopup();
+                }
+            });
+            
+            // 窗口大小改变时重新定位
+            window.addEventListener('resize', function() {
+                if (isMentionPopupOpen) {
+                    positionPopup();
+                }
+            });
+        }
+
+        function handlePopupKeydown(e) {
+            const items = document.querySelectorAll('.mention-popup-item');
+            const visibleCount = items.length;
+            
+            if (visibleCount === 0) return;
+            
+            switch(e.key) {
+                case 'Escape':
+                    e.preventDefault();
+                    closeMentionPopup();
+                    // 删除输入的@
+                    removeAtBeforeCursor();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    keyboardSelectedIndex = (keyboardSelectedIndex + 1) % visibleCount;
+                    updateKeyboardSelection();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    keyboardSelectedIndex = (keyboardSelectedIndex - 1 + visibleCount) % visibleCount;
+                    updateKeyboardSelection();
+                    break;
+                case 'Enter':
+                case 'Tab':
+                    e.preventDefault();
+                    if (keyboardSelectedIndex >= 0) {
+                        const selectedItem = document.querySelector(`.mention-popup-item[data-visible-index="${keyboardSelectedIndex}"]`);
+                        if (selectedItem) {
+                            selectImageForInsert(parseInt(selectedItem.dataset.index));
+                        }
+                    }
+                    break;
+            }
+        }
+
+        function handlePopupInput(e) {
+            // 获取光标前的文本
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                const textNode = range.startContainer;
+                
+                if (textNode.nodeType === Node.TEXT_NODE) {
+                    const text = textNode.textContent;
+                    const cursorPos = range.startOffset;
+                    const beforeCursor = text.substring(0, cursorPos);
+                    
+                    // 查找@之后的关键词
+                    const atIndex = beforeCursor.lastIndexOf('@');
+                    if (atIndex !== -1) {
+                        const keyword = beforeCursor.substring(atIndex + 1);
+                        // 检查是否包含空格或换行
+                        if (!keyword.includes(' ') && !keyword.includes('\n')) {
+                            popupKeyword = keyword;
+                            renderMentionList();
+                            // 重新选择第一个
+                            if (document.querySelectorAll('.mention-popup-item').length > 0) {
+                                keyboardSelectedIndex = 0;
+                                updateKeyboardSelection();
+                            }
+                            return;
+                        }
+                    }
+                }
+            }
+            // 如果没有找到有效的@关键词，关闭弹出框
+            closeMentionPopup();
+        }
+
+        function removeAtBeforeCursor() {
+            const editor = document.getElementById('prompt');
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                const textNode = range.startContainer;
+                if (textNode.nodeType === Node.TEXT_NODE) {
+                    const text = textNode.textContent;
+                    const cursorPos = range.startOffset;
+                    const beforeCursor = text.substring(0, cursorPos);
+                    const atIndex = beforeCursor.lastIndexOf('@');
+                    if (atIndex !== -1 && atIndex === cursorPos - 1) {
+                        range.setStart(textNode, atIndex);
+                        range.setEnd(textNode, cursorPos);
+                        range.deleteContents();
+                    }
+                }
+            }
+        }
+
+        function editExistingMention(event, element) {
+            event.preventDefault();
+            event.stopPropagation();
+            editingChip = element;
+            selectedIndex = parseInt(element.dataset.index);
+            openMentionPopup();
+        }
+
+        // 获取解析后的文本
+        function getParsedPromptText() {
+            const editor = document.getElementById('prompt');
+            let text = '';
+            
+            function traverse(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    text += node.textContent.replace(/\u00A0/g, ' '); 
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.classList.contains('mention-chip')) {
+                        const idx = parseInt(node.dataset.index) + 1;
+                        text += `【image${idx}】`;
+                    } else if (node.tagName === 'BR') {
+                        text += '\n';
+                    } else {
+                        for (let child of node.childNodes) {
+                            traverse(child);
+                        }
+                        if ((node.tagName === 'DIV' || node.tagName === 'P') && node.nextSibling) {
+                            text += '\n';
+                        }
+                    }
+                }
+            }
+            
+            traverse(editor);
+            return text.replace(/\n{3,}/g, '\n\n').trim();
+        }
+
+        // 文件处理函数 - 现在使用异步处理压缩
+        async function handleFileSelect(event, index) {
+            const file = event.target.files[0];
+            if (file) {
+                try {
+                    const compressedFile = await compressImage(file);
+                    handleImageFile(compressedFile, index);
+                } catch (error) {
+                    console.error('Image compression failed:', error);
+                    // 如果压缩失败，使用原图
+                    handleImageFile(file, index);
+                }
+            }
+        }
+
+        function handleDragOver(e, index) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById(`slot-${index}`).classList.add('dragover');
+        }
+
+        function handleDragLeave(e, index) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById(`slot-${index}`).classList.remove('dragover');
+        }
+
+        async function handleDrop(e, index) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById(`slot-${index}`).classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                try {
+                    const compressedFile = await compressImage(files[0]);
+                    handleImageFile(compressedFile, index);
+                } catch (error) {
+                    console.error('Image compression failed:', error);
+                    handleImageFile(files[0], index);
+                }
+            }
+        }
+
+        function handleImageFile(file, index) {
+            imageFiles[index] = file;
+            renderImageGrid();
+        }
+
+        function removeImage(e, index) {
+            e.stopPropagation();
+            // 将该位置设为null（保持索引不变，这样后面图片的引用不会乱）
+            imageFiles[index] = null;
+            
+            // 清理尾部的空位（从后往前删除连续的null）
+            while (imageFiles.length > 0 && imageFiles[imageFiles.length - 1] === null) {
+                imageFiles.pop();
+            }
+            
+            // 重新渲染网格
+            renderImageGrid();
+            
+            // 更新提示词中的引用编号（如果有引用了被删除的图片或后面的图片）
+            updatePromptMentionsAfterRemoval(index);
+            
+            // 如果弹出框打开，刷新列表
+            if (isMentionPopupOpen) {
+                renderMentionList();
+            }
+        }
+        
+        // 删除图片后更新提示词中的引用
+        function updatePromptMentionsAfterRemoval(removedIndex) {
+            const editor = document.getElementById('prompt');
+            const chips = editor.querySelectorAll('.mention-chip');
+            
+            chips.forEach(chip => {
+                const chipIndex = parseInt(chip.dataset.index);
+                if (chipIndex === removedIndex) {
+                    // 删除被移除图片的引用
+                    const nextSibling = chip.nextSibling;
+                    chip.remove();
+                    // 删除后面的空格
+                    if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent === '\u00A0') {
+                        nextSibling.remove();
+                    }
+                } else if (chipIndex > removedIndex) {
+                    // 更新后面图片的引用编号
+                    const newIndex = chipIndex - 1;
+                    chip.dataset.index = newIndex;
+                    chip.innerHTML = `@img${newIndex + 1} <svg style="width:12px;height:12px;margin-left:2px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+                }
+            });
+        }
+
+        function clearAllImages() {
+            imageFiles.length = 0;
+            renderImageGrid();
+            // 清除提示词中的所有引用
+            const editor = document.getElementById('prompt');
+            const chips = editor.querySelectorAll('.mention-chip');
+            chips.forEach(chip => {
+                const nextSibling = chip.nextSibling;
+                chip.remove();
+                if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent === '\u00A0') {
+                    nextSibling.remove();
+                }
+            });
+        }
+
+        function setupPasteListener() {
+            document.addEventListener('paste', async (e) => {
+                if (document.activeElement.id === 'prompt' || document.activeElement.isContentEditable) return;
+                
+                const items = e.clipboardData.items;
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const validCount = imageFiles.filter(f => f !== null).length;
+                        if (validCount >= 14) {
+                            showMessage('最多只能上传14张参考图', 'error');
+                            return;
+                        }
+                        
+                        const blob = item.getAsFile();
+                        const file = new File([blob], `pasted-image-${Date.now()}.png`, { type: blob.type });
+                        
+                        let targetIndex;
+                        // activeSlot === -1 表示悬停在添加按钮上
+                        if (activeSlot === -1) {
+                            // 找第一个空位或在末尾添加新位置
+                            targetIndex = imageFiles.findIndex(f => f === null);
+                            if (targetIndex === -1) {
+                                targetIndex = imageFiles.length;
+                                imageFiles.push(null);
+                            }
+                        } else if (activeSlot !== null && activeSlot < imageFiles.length && !imageFiles[activeSlot]) {
+                            // 活动槽位有效且为空，粘贴到该位置
+                            targetIndex = activeSlot;
+                        } else {
+                            // 找第一个空位
+                            targetIndex = imageFiles.findIndex(f => f === null);
+                            if (targetIndex === -1) {
+                                targetIndex = imageFiles.length;
+                                imageFiles.push(null);
+                            }
+                        }
+                        
+                        try {
+                            const compressedFile = await compressImage(file);
+                            imageFiles[targetIndex] = compressedFile;
+                            renderImageGrid();
+                        } catch (error) {
+                            console.error('Image compression failed:', error);
+                            imageFiles[targetIndex] = file;
+                            renderImageGrid();
+                        }
+                        break;
+                    }
+                }
+            });
+        }
+
+        // API 配置管理
+        function saveConfig() {
+            const config = {
+                baseUrl: document.getElementById('baseUrl').value,
+                apiKey: document.getElementById('apiKey').value,
+                modelName: document.getElementById('modelName').value,
+                historyLimit: document.getElementById('historyLimit').value,
+                enableCompression: document.getElementById('enableCompression').checked,
+                maxEdgeLength: document.getElementById('maxEdgeLength').value,
+                jpegQuality: document.getElementById('jpegQuality').value,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('nanoBananaConfig', JSON.stringify(config));
+            showMessage('配置已保存到本地存储', 'success');
+        }
+
+        function loadSavedConfig() {
+            const saved = localStorage.getItem('nanoBananaConfig');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
+                    document.getElementById('apiKey').value = config.apiKey || '';
+                    document.getElementById('modelName').value = config.modelName || 'gemini-2.0-flash-image-preview';
+                    document.getElementById('historyLimit').value = config.historyLimit || '20';
+                    document.getElementById('enableCompression').checked = config.enableCompression || false;
+                    document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
+                    document.getElementById('jpegQuality').value = config.jpegQuality || '0.9';
+                } catch (e) {
+                    console.error('Failed to load config:', e);
+                }
+            }
+        }
+
+        function exportConfig() {
+            const config = {
+                baseUrl: document.getElementById('baseUrl').value,
+                apiKey: document.getElementById('apiKey').value,
+                modelName: document.getElementById('modelName').value,
+                historyLimit: document.getElementById('historyLimit').value,
+                enableCompression: document.getElementById('enableCompression').checked,
+                maxEdgeLength: document.getElementById('maxEdgeLength').value,
+                jpegQuality: document.getElementById('jpegQuality').value,
+                timestamp: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nano-banana-config-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage('配置已导出', 'success');
+        }
+
+        function importConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
+                    document.getElementById('apiKey').value = config.apiKey || '';
+                    document.getElementById('modelName').value = config.modelName || 'gemini-2.0-flash-image-preview';
+                    document.getElementById('historyLimit').value = config.historyLimit || '20';
+                    document.getElementById('enableCompression').checked = config.enableCompression || false;
+                    document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
+                    document.getElementById('jpegQuality').value = config.jpegQuality || '0.9';
+                    saveConfig();
+                    showMessage('配置已导入并保存', 'success');
+                } catch (err) {
+                    showMessage('配置文件格式错误', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // 图像生成
+        async function generateImage() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const model = document.getElementById('modelName').value.trim();
+            const prompt = getParsedPromptText();
+            const aspectRatio = document.getElementById('aspectRatio').value;
+            const resolution = document.getElementById('resolution').value;
+            const responseFormat = document.querySelector('input[name="responseFormat"]:checked').value;
+
+            if (!baseUrl || !apiKey) {
+                showMessage('请填写 API Base URL 和 API Key', 'error');
+                return;
+            }
+            if (!prompt) {
+                showMessage('请输入提示词', 'error');
+                return;
+            }
+
+            const validImages = imageFiles.filter(f => f !== null);
+            if (validImages.length === 0) {
+                showMessage('请至少上传一张参考图', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btnText');
+            const loader = document.getElementById('btnLoader');
+            btn.disabled = true;
+            btnText.textContent = '生成中...';
+            loader.classList.remove('hidden');
+            hideMessage();
+
+            try {
+                const formData = new FormData();
+                formData.append('model', model);
+                formData.append('prompt', prompt);
+                formData.append('response_format', responseFormat);
+                if (aspectRatio) formData.append('aspect_ratio', aspectRatio);
+                if (resolution) formData.append('image_size', resolution);
+                validImages.forEach(file => formData.append('image', file));
+
+                const response = await fetch(`${baseUrl}/images/edits`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                displayResult(data, responseFormat);
+                
+                // 保存到历史记录
+                await saveResultToHistory(data, responseFormat, prompt);
+                
+                showMessage('图像生成成功！', 'success');
+
+            } catch (error) {
+                console.error('Generation error:', error);
+                showMessage(`生成失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = '生成图像';
+                loader.classList.add('hidden');
+            }
+        }
+
+        async function saveResultToHistory(data, format, prompt) {
+            try {
+                let imageData = null;
+                
+                if (format === 'b64_json' && data.data && data.data[0] && data.data[0].b64_json) {
+                    imageData = `data:image/png;base64,${data.data[0].b64_json}`;
+                } else if (data.data && data.data[0] && data.data[0].url) {
+                    // 对于 URL 格式，我们需要先获取图片并转换为 base64
+                    try {
+                        const response = await fetch(data.data[0].url);
+                        const blob = await response.blob();
+                        imageData = await blobToBase64(blob);
+                    } catch (e) {
+                        console.error('Failed to fetch image from URL:', e);
+                        // 如果获取失败，直接使用 URL（虽然 IndexedDB 存储 URL 不如 base64 稳定）
+                        imageData = data.data[0].url;
+                    }
+                }
+                
+                if (imageData) {
+                    await addHistoryItem(imageData, prompt);
+                    await loadHistory();
+                }
+            } catch (error) {
+                console.error('Failed to save to history:', error);
+            }
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        function displayResult(data, format) {
+            const resultArea = document.getElementById('resultArea');
+            const resultImage = document.getElementById('resultImage');
+            const downloadLink = document.getElementById('downloadLink');
+            const jsonResult = document.getElementById('jsonResult');
+
+            resultArea.classList.remove('hidden');
+
+            if (format === 'b64_json' && data.data && data.data[0] && data.data[0].b64_json) {
+                const base64 = data.data[0].b64_json;
+                const dataUrl = `data:image/png;base64,${base64}`;
+                resultImage.src = dataUrl;
+                downloadLink.href = dataUrl;
+                downloadLink.download = `generated-${Date.now()}.png`;
+                if (jsonResult) {
+                    jsonResult.textContent = JSON.stringify(data, null, 2);
+                    jsonResult.classList.remove('hidden');
+                }
+            } else if (data.data && data.data[0] && data.data[0].url) {
+                resultImage.src = data.data[0].url;
+                downloadLink.href = data.data[0].url;
+                downloadLink.download = `generated-${Date.now()}.png`;
+                if (jsonResult) jsonResult.classList.add('hidden');
+            } else {
+                showMessage('返回数据格式异常', 'error');
+                if (jsonResult) {
+                    jsonResult.textContent = JSON.stringify(data, null, 2);
+                    jsonResult.classList.remove('hidden');
+                }
+            }
+
+            resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showMessage(msg, type) {
+            const area = document.getElementById('messageArea');
+            area.textContent = msg;
+            area.classList.remove('hidden', 'bg-red-500/20', 'text-red-400', 'bg-green-500/20', 'text-green-400');
+            
+            if (type === 'error') {
+                area.classList.add('bg-red-500/20', 'text-red-400', 'border', 'border-red-500/30');
+            } else {
+                area.classList.add('bg-green-500/20', 'text-green-400', 'border', 'border-green-500/30');
+            }
+        }
+
+        function hideMessage() {
+            document.getElementById('messageArea').classList.add('hidden');
+        }
+
+        // 键盘快捷键关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>
