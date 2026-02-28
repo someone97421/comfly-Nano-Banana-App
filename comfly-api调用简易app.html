@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,35 +8,101 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        :root {
+            /* 夜间模式（默认） */
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(30, 41, 59, 0.7);
+            --bg-input: rgba(30, 41, 59, 0.5);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --border-input: #475569;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --slot-bg: rgba(30, 41, 59, 0.3);
+            --slot-hover: rgba(30, 41, 59, 0.5);
+            --chip-bg: rgba(37, 99, 235, 0.2);
+            --chip-border: rgba(59, 130, 246, 0.4);
+            --chip-text: #93c5fd;
+            --btn-secondary: #334155;
+            --btn-secondary-hover: #475569;
         }
+
+        [data-theme="light"] {
+            /* 日间模式 - 白绿配色 */
+            --bg-primary: #f0fdf4;
+            --bg-secondary: rgba(255, 255, 255, 0.9);
+            --bg-input: rgba(255, 255, 255, 0.8);
+            --text-primary: #1a1a1a;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: rgba(34, 197, 94, 0.2);
+            --border-input: #86efac;
+            --accent-blue: #16a34a;
+            --accent-purple: #22c55e;
+            --accent-green: #15803d;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --slot-bg: rgba(220, 252, 231, 0.5);
+            --slot-hover: rgba(187, 247, 208, 0.7);
+            --chip-bg: rgba(34, 197, 94, 0.15);
+            --chip-border: rgba(34, 197, 94, 0.4);
+            --chip-text: #15803d;
+            --btn-secondary: #dcfce7;
+            --btn-secondary-hover: #bbf7d0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
         .image-slot {
             transition: all 0.3s ease;
             aspect-ratio: 1;
+            background: var(--slot-bg);
         }
+
         .image-slot:hover {
-            border-color: #3b82f6;
+            border-color: var(--accent-blue);
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
         }
+
+        [data-theme="light"] .image-slot:hover {
+            box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.3);
+        }
+
         .image-slot.active {
-            border-color: #10b981;
+            border-color: var(--accent-green);
             background: rgba(16, 185, 129, 0.1);
         }
+
         .image-slot.dragover {
-            border-color: #8b5cf6;
+            border-color: var(--accent-purple);
             background: rgba(139, 92, 246, 0.2);
-            transform: scale(1.05);
         }
+
+        [data-theme="light"] .image-slot.dragover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
         .img-tag {
             position: absolute;
             bottom: 4px;
             left: 4px;
-            background: rgba(59, 130, 246, 0.9);
+            background: var(--accent-blue);
             color: white;
             font-size: 11px;
             font-weight: 600;
@@ -44,25 +111,35 @@
             font-family: monospace;
             pointer-events: none;
             z-index: 5;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
+
         .loader {
-            border: 3px solid rgba(255,255,255,0.1);
-            border-left-color: #3b82f6;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--accent-blue);
             border-radius: 50%;
             width: 24px;
             height: 24px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .pastable-indicator { position: relative; }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .pastable-indicator {
+            position: relative;
+        }
+
         .pastable-indicator::after {
             content: 'Ctrl+V';
             position: absolute;
             bottom: 4px;
             right: 4px;
             font-size: 9px;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             padding: 2px 4px;
             border-radius: 3px;
             opacity: 0;
@@ -70,35 +147,65 @@
             pointer-events: none;
             color: #94a3b8;
         }
-        .pastable-indicator:hover::after { opacity: 1; }
-        input[type="file"] { display: none; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
-        
+
+        [data-theme="light"] .pastable-indicator::after {
+            color: #15803d;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .pastable-indicator:hover::after {
+            opacity: 1;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(128, 128, 128, 0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(128, 128, 128, 0.3);
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(128, 128, 128, 0.5);
+        }
+
         /* 富文本编辑器样式 */
         .prompt-editor {
             min-height: 120px;
-            max-height: 250px;
+            max-height: 200px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-word;
+            background: var(--bg-input);
+            border-color: var(--border-input);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
+
         .prompt-editor:empty::before {
             content: attr(data-placeholder);
-            color: #64748b;
+            color: var(--text-muted);
             pointer-events: none;
         }
-        
+
         /* 交互式引用标签 (Chip) */
         .mention-chip {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            background: rgba(37, 99, 235, 0.2);
-            color: #93c5fd;
-            border: 1px solid rgba(59, 130, 246, 0.4);
+            background: var(--chip-bg);
+            color: var(--chip-text);
+            border: 1px solid var(--chip-border);
             padding: 2px 8px;
             border-radius: 6px;
             font-family: monospace;
@@ -110,9 +217,9 @@
             margin: 0 2px;
             transition: all 0.2s;
         }
+
         .mention-chip:hover {
-            background: rgba(37, 99, 235, 0.4);
-            border-color: rgba(96, 165, 250, 0.6);
+            filter: brightness(1.2);
         }
 
         /* 弹出式引用选择面板 */
@@ -120,45 +227,50 @@
             position: absolute;
             width: 220px;
             max-height: 280px;
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(59, 130, 246, 0.5);
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-blue);
             border-radius: 10px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             z-index: 1000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px) scale(0.95);
             transition: all 0.2s ease;
         }
+
         .mention-popup.active {
             opacity: 1;
             visibility: visible;
             transform: translateY(0) scale(1);
         }
+
         .mention-popup-header {
             padding: 10px 12px;
             font-size: 12px;
             font-weight: 600;
-            color: #94a3b8;
-            border-bottom: 1px solid rgba(71, 85, 105, 0.5);
-            background: rgba(30, 41, 59, 0.9);
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-input);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .mention-popup-header .hint {
             font-size: 11px;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: 400;
         }
+
         .mention-popup-list {
             flex: 1;
             overflow-y: auto;
             padding: 6px;
         }
+
         .mention-popup-item {
             display: flex;
             align-items: center;
@@ -170,50 +282,58 @@
             transition: all 0.15s;
             border: 2px solid transparent;
         }
-        .mention-popup-item:hover, .mention-popup-item.selected {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: #3b82f6;
-        }
+
+        .mention-popup-item:hover,
         .mention-popup-item.selected {
-            background: rgba(59, 130, 246, 0.35);
+            background: var(--chip-bg);
+            border-color: var(--accent-blue);
         }
+
+        .mention-popup-item.selected {
+            filter: brightness(1.1);
+        }
+
         .mention-popup-item img {
             width: 40px;
             height: 40px;
             object-fit: cover;
             border-radius: 6px;
             display: block;
-            background: rgba(30, 41, 59, 0.8);
+            background: var(--slot-bg);
         }
+
         .mention-popup-item span {
             font-size: 13px;
-            color: #60a5fa;
+            color: var(--accent-blue);
             font-family: monospace;
             font-weight: 600;
         }
+
         .mention-popup-empty {
             padding: 24px 16px;
             text-align: center;
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-muted);
             line-height: 1.5;
         }
+
         .mention-popup-empty .icon {
             font-size: 24px;
             margin-bottom: 8px;
             opacity: 0.5;
         }
-        
+
         .textarea-wrapper {
             position: relative;
         }
+
         .mention-btn {
             position: absolute;
             right: 12px;
             top: 8px;
-            background: #334155;
-            border: 1px solid #475569;
-            color: #94a3b8;
+            background: var(--btn-secondary);
+            border: 1px solid var(--border-input);
+            color: var(--text-secondary);
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 13px;
@@ -222,65 +342,87 @@
             z-index: 10;
             font-weight: 600;
         }
-        .mention-btn:hover, .mention-btn.active {
-            background: #2563eb;
+
+        .mention-btn:hover,
+        .mention-btn.active {
+            background: var(--accent-blue);
             color: white;
-            border-color: #2563eb;
+            border-color: var(--accent-blue);
         }
 
-        /* 高级选项抽屉 */
-        .advanced-drawer {
+        /* 设置抽屉样式 */
+        .settings-drawer {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
+            transition: max-height 0.4s ease-out, opacity 0.3s ease;
+            opacity: 0;
         }
-        .advanced-drawer.open {
-            max-height: 500px;
+
+        .settings-drawer.open {
+            max-height: 800px;
+            opacity: 1;
         }
+
         .drawer-toggle {
             transition: transform 0.3s ease;
         }
+
         .drawer-toggle.open {
             transform: rotate(180deg);
         }
 
         /* 历史记录样式 */
+        .history-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px;
+            scroll-behavior: smooth;
+        }
+
         .history-item {
             position: relative;
-            aspect-ratio: 1;
+            flex-shrink: 0;
+            width: 100px;
+            height: 100px;
             overflow: hidden;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
+
         .history-item:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
+
         .history-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .history-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             opacity: 0;
             transition: opacity 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
+
         .history-item:hover .history-overlay {
             opacity: 1;
         }
+
         .history-btn {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
@@ -288,20 +430,22 @@
             color: white;
             transition: all 0.2s;
         }
+
         .history-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.1);
         }
+
         .history-time {
             position: absolute;
-            bottom: 4px;
-            left: 4px;
-            right: 4px;
-            font-size: 10px;
-            color: rgba(255,255,255,0.8);
-            background: rgba(0,0,0,0.5);
-            padding: 2px 4px;
-            border-radius: 4px;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 1px 3px;
+            border-radius: 3px;
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
@@ -312,7 +456,7 @@
         .image-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0, 0, 0, 0.9);
             z-index: 9999;
             display: flex;
             align-items: center;
@@ -321,24 +465,27 @@
             visibility: hidden;
             transition: all 0.3s ease;
         }
+
         .image-modal.active {
             opacity: 1;
             visibility: visible;
         }
+
         .image-modal img {
             max-width: 90%;
             max-height: 90%;
             object-fit: contain;
             border-radius: 8px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
+
         .image-modal-close {
             position: absolute;
             top: 20px;
             right: 20px;
             width: 48px;
             height: 48px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -347,8 +494,24 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .image-modal-close:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 结果图预览限制高度 */
+        .result-preview-container {
+            max-height: 70vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-preview-container img {
+            max-height: 70vh;
+            width: auto;
+            object-fit: contain;
         }
 
         /* 结果图预览放大镜按钮 */
@@ -356,7 +519,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: rgba(59, 130, 246, 0.9);
+            background: var(--accent-blue);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -364,264 +527,509 @@
             transition: all 0.2s;
             cursor: pointer;
         }
+
         .result-zoom-btn:hover {
-            background: rgba(59, 130, 246, 1);
+            filter: brightness(1.1);
             transform: scale(1.1);
+        }
+
+        /* 输入框统一样式 */
+        .form-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-input);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-blue);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        [data-theme="light"] .form-input:focus {
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+        }
+
+        /* 下拉框样式 */
+        .form-select {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-input);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .form-select option {
+            background-color: #f0fdf4;
+            color: #166534;
+        }
+
+        /* 主题切换按钮 */
+        .theme-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-input);
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .theme-btn:hover {
+            background: var(--btn-secondary-hover);
+        }
+
+        .theme-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* 单选框样式 */
+        input[type="radio"] {
+            accent-color: var(--accent-blue);
+        }
+
+        /* 开关样式 */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--btn-secondary);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.toggle-slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(20px);
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 custom-scrollbar">
+
+<body class="min-h-screen p-4 md:p-6 custom-scrollbar">
 
     <!-- 图片预览模态框 -->
     <div id="imageModal" class="image-modal" onclick="closeImageModal()">
         <div class="image-modal-close">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
         </div>
         <img id="modalImage" src="" alt="Preview" onclick="event.stopPropagation()">
     </div>
 
-    <div class="max-w-7xl mx-auto space-y-6">
-        <div class="text-center space-y-2 mb-8">
-            <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+    <div class="max-w-7xl mx-auto space-y-4">
+        <!-- 标题 -->
+        <div class="text-center space-y-2 mb-6">
+            <h1
+                class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Nano-Banana AI 图像生成器
             </h1>
-            <p class="text-slate-400">支持 Gemini / Nano-banana-2 多图参考生成 | 输入 @ 引用图像</p>
+            <p class="text-slate-400 text-sm" style="color: var(--text-secondary);">支持 Gemini / Nano-banana-2 多图参考生成 |
+                输入 @ 引用图像</p>
         </div>
 
-        <div class="glass-panel rounded-2xl p-6 space-y-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold flex items-center gap-2">
-                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    API 配置
-                </h2>
-                <div class="flex gap-2">
-                    <button onclick="saveConfig()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                        保存配置
-                    </button>
-                    <button onclick="document.getElementById('configFile').click()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        导入配置
-                    </button>
-                    <input type="file" id="configFile" accept=".json" onchange="importConfig(event)">
-                    <button onclick="exportConfig()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        导出配置
-                    </button>
+        <!-- 第一排：设置区（可关闭抽屉） -->
+        <div class="glass-panel rounded-2xl overflow-hidden">
+            <button onclick="toggleSettingsDrawer()"
+                class="w-full px-6 py-4 flex items-center justify-between hover:bg-opacity-50 transition-colors"
+                style="background: rgba(128,128,128,0.05);">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="text-lg font-semibold">设置与配置</span>
+                    <span class="text-xs px-2 py-1 rounded"
+                        style="background: var(--bg-input); color: var(--text-muted);">API配置、导入导出、主题设置</span>
                 </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-slate-300">API Base URL</label>
-                    <input type="text" id="baseUrl" value="https://ai.comfly.chat/v1" 
-                           class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-slate-300">API Key</label>
-                    <input type="password" id="apiKey" 
-                           class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-slate-300">模型名称</label>
-                    <input type="text" id="modelName" value="gemini-3.1-flash-image-preview" 
-                           class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-            </div>
-        </div>
+                <svg id="settingsDrawerIcon" class="w-6 h-6 drawer-toggle" style="color: var(--text-secondary);"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="lg:col-span-1 space-y-4">
-                <div class="glass-panel rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold">参考图片 (最多14张)</h2>
-                        <button onclick="clearAllImages()" class="text-xs text-red-400 hover:text-red-300 transition-colors">清空全部</button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3" id="imageGrid">
-                        <!-- Slots generated by JS -->
-                    </div>
-                    <p class="text-xs text-slate-500 mt-3 text-center">提示：鼠标悬停后按 Ctrl+V 粘贴图片</p>
-                </div>
+            <div id="settingsDrawer" class="settings-drawer">
+                <div class="p-6 space-y-6 border-t" style="border-color: var(--border-color);">
 
-                <!-- 历史记录 -->
-                <div class="glass-panel rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold flex items-center gap-2">
-                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            生成历史
-                        </h2>
-                        <span id="historyCount" class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">0</span>
-                    </div>
-                    <div id="historyGrid" class="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto custom-scrollbar">
-                        <div class="col-span-2 text-center text-slate-500 py-8 text-sm">
-                            暂无历史记录
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2 space-y-4">
-                <div class="glass-panel rounded-2xl p-6 space-y-6">
-                    <h2 class="text-lg font-semibold mb-4">生成参数</h2>
-                    
-                    <!-- Prompt with Mention Popup -->
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-300 flex justify-between items-center">
-                            <span>提示词 (Prompt)</span>
-                            <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">输入 @ 快速引用图片</span>
-                        </label>
-                        <div class="textarea-wrapper">
-                            <div id="prompt" class="prompt-editor flex-1 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm custom-scrollbar pr-12" 
-                                 contenteditable="true" 
-                                 data-placeholder="描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中"></div>
-                            
-                            <button type="button" onclick="toggleMentionPopup()" class="mention-btn" id="mentionBtn" title="插入图片引用">@</button>
-                            
-                            <!-- 弹出式引用选择面板 -->
-                            <div id="mentionPopup" class="mention-popup">
-                                <div class="mention-popup-header">
-                                    <span>选择图片引用</span>
-                                    <span class="hint">ESC 关闭</span>
-                                </div>
-                                <div class="mention-popup-list custom-scrollbar" id="mentionPopupList">
-                                    <!-- 动态填充 -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium text-slate-300">宽高比 (Aspect Ratio)</label>
-                            <select id="aspectRatio" class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
-                                <option value="">默认 (Default)</option>
-                                <option value="1:1">1:1 (正方形)</option>
-                                <option value="2:3">2:3 (纵向)</option>
-                                <option value="3:2">3:2 (横向)</option>
-                                <option value="3:4">3:4 (纵向)</option>
-                                <option value="4:3">4:3 (横向)</option>
-                                <option value="4:5">4:5 (纵向)</option>
-                                <option value="5:4">5:4 (横向)</option>
-                                <option value="9:16">9:16 (手机竖屏)</option>
-                                <option value="16:9">16:9 (宽屏)</option>
-                                <option value="21:9">21:9 (超宽屏)</option>
-                                <option value="1:4">1:4 (长图/海报)</option>
-                                <option value="4:1">4:1 (Banner)</option>
-                                <option value="1:8">1:8 (极长图)</option>
-                                <option value="8:1">8:1 (极宽图)</option>
-                            </select>
-                        </div>
-
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium text-slate-300">分辨率 (Image Size)</label>
-                            <select id="resolution" class="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
-                                <option value="">默认 (Auto)</option>
-                                <option value="1K">1K (1024×1024)</option>
-                                <option value="2K">2K (2048×2048)</option>
-                                <option value="4K">4K (4096×4096)</option>
-                            </select>
-                            <p class="text-xs text-slate-500 mt-1">* 仅 nano-banana-2 支持分辨率参数</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-300">返回格式</label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="responseFormat" value="url" checked class="accent-blue-500">
-                                <span class="text-sm text-slate-400">URL 链接</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="responseFormat" value="b64_json" class="accent-blue-500">
-                                <span class="text-sm text-slate-400">Base64 (JSON)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 高级选项抽屉 -->
-                    <div class="border border-slate-700 rounded-xl overflow-hidden">
-                        <button onclick="toggleAdvancedDrawer()" class="w-full px-4 py-3 bg-slate-800/50 flex items-center justify-between hover:bg-slate-800/70 transition-colors">
-                            <span class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                高级选项
-                            </span>
-                            <svg id="drawerToggleIcon" class="w-5 h-5 text-slate-400 drawer-toggle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="advancedDrawer" class="advanced-drawer">
-                            <div class="p-4 space-y-4 bg-slate-800/30">
-                                <!-- 历史记录设置 -->
-                                <div class="pb-4 border-b border-slate-700/50">
-                                    <h3 class="text-sm font-medium text-slate-400 mb-3">历史记录设置</h3>
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex-1 mr-4">
-                                            <label class="text-xs text-slate-500 mb-1 block">最大保存数量</label>
-                                            <input type="number" id="historyLimit" value="20" min="5" max="100"
-                                                   class="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
-                                        </div>
-                                        <button onclick="clearHistory()" class="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm transition-colors flex items-center gap-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            清除历史
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- 图片压缩设置 -->
-                                <div>
-                                    <h3 class="text-sm font-medium text-slate-400 mb-3">图片压缩设置</h3>
-                                    <div class="space-y-3">
-                                        <div class="flex items-center justify-between">
-                                            <label class="text-sm text-slate-300">启用图片压缩</label>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="enableCompression" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="text-xs text-slate-500 mb-1 block">长边限制 (px)</label>
-                                                <input type="number" id="maxEdgeLength" value="2560" min="512" max="8192"
-                                                       class="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
-                                            </div>
-                                            <div>
-                                                <label class="text-xs text-slate-500 mb-1 block">JPEG 质量 (0-1)</label>
-                                                <input type="number" id="jpegQuality" value="0.9" min="0.1" max="1" step="0.1"
-                                                       class="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm outline-none">
-                                                <p class="text-xs text-slate-600 mt-1">默认 0.9，1.0 为不压缩</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onclick="generateImage()" id="generateBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
-                        <span id="btnText">生成图像</span>
-                        <div id="btnLoader" class="loader hidden"></div>
-                    </button>
-
-                    <div id="messageArea" class="hidden rounded-lg p-4 text-sm"></div>
-                </div>
-
-                <div id="resultArea" class="glass-panel rounded-2xl p-6 hidden">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        生成结果
-                    </h2>
-                    <div class="relative group">
-                        <img id="resultImage" class="w-full rounded-lg shadow-2xl" />
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-4">
-                            <button onclick="openImageModal(document.getElementById('resultImage').src)" class="result-zoom-btn" title="放大预览">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                    <!-- 主题切换 -->
+                    <div>
+                        <h3 class="text-md font-semibold mb-4 flex items-center gap-2"
+                            style="color: var(--text-secondary);">
+                            <svg class="w-4 h-4" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                            </svg>
+                            主题设置
+                        </h3>
+                        <div class="flex gap-3">
+                            <button onclick="setTheme('light')" id="theme-light"
+                                class="theme-btn flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                日间
                             </button>
-                            <a id="downloadLink" href="#" target="_blank" download class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                下载原图
-                            </a>
+                            <button onclick="setTheme('dark')" id="theme-dark"
+                                class="theme-btn flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                                夜间
+                            </button>
+                            <button onclick="setTheme('auto')" id="theme-auto"
+                                class="theme-btn flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                跟随系统
+                            </button>
                         </div>
                     </div>
-                    <div id="jsonResult" class="mt-4 p-4 bg-slate-900 rounded-lg overflow-x-auto text-xs font-mono text-slate-400 hidden"></div>
+
+                    <!-- API配置 -->
+                    <div class="border-t pt-4" style="border-color: var(--border-color);">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-md font-semibold flex items-center gap-2"
+                                style="color: var(--text-secondary);">
+                                <svg class="w-4 h-4" style="color: var(--accent-blue);" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                API 配置
+                            </h3>
+                            <div class="flex gap-2">
+                                <button onclick="saveConfig()"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                                    style="background: var(--accent-blue); color: white;">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                    </svg>
+                                    保存配置
+                                </button>
+                                <button onclick="document.getElementById('configFile').click()"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                                    style="background: var(--btn-secondary); color: var(--text-primary);">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    导入
+                                </button>
+                                <button onclick="exportConfig()"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                                    style="background: var(--btn-secondary); color: var(--text-primary);">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    导出
+                                </button>
+                                <input type="file" id="configFile" accept=".json" onchange="importConfig(event)">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium" style="color: var(--text-secondary);">API Base
+                                    URL</label>
+                                <input type="text" id="baseUrl" value="https://ai.comfly.chat/v1"
+                                    class="w-full px-4 py-2 rounded-lg text-sm form-input">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium" style="color: var(--text-secondary);">API Key</label>
+                                <input type="password" id="apiKey"
+                                    class="w-full px-4 py-2 rounded-lg text-sm form-input">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium" style="color: var(--text-secondary);">模型名称</label>
+                                <input type="text" id="modelName" value="gemini-3.1-flash-image-preview"
+                                    class="w-full px-4 py-2 rounded-lg text-sm form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 高级选项 -->
+                    <div class="border-t pt-4" style="border-color: var(--border-color);">
+                        <h3 class="text-md font-semibold mb-4 flex items-center gap-2"
+                            style="color: var(--text-secondary);">
+                            <svg class="w-4 h-4" style="color: var(--accent-green);" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            高级选项
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- 返回格式 -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">返回格式</h4>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="responseFormat" value="url" checked
+                                            class="accent-blue-500">
+                                        <span class="text-sm" style="color: var(--text-secondary);">URL 链接</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="responseFormat" value="b64_json"
+                                            class="accent-blue-500">
+                                        <span class="text-sm" style="color: var(--text-secondary);">Base64</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 历史记录设置 -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">历史记录设置</h4>
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <label class="text-xs mb-1 block"
+                                            style="color: var(--text-muted);">最大保存数量</label>
+                                        <input type="number" id="historyLimit" value="20" min="5" max="100"
+                                            class="w-full px-3 py-2 rounded-lg text-sm form-input">
+                                    </div>
+                                    <button onclick="clearHistory()"
+                                        class="mt-5 px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                                        style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        清除历史
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 图片压缩设置 -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">图片压缩设置</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm" style="color: var(--text-secondary);">启用图片压缩</label>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="enableCompression">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs mb-1 block" style="color: var(--text-muted);">长边限制
+                                                (px)</label>
+                                            <input type="number" id="maxEdgeLength" value="2560" min="512" max="8192"
+                                                class="w-full px-3 py-2 rounded-lg text-sm form-input">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs mb-1 block" style="color: var(--text-muted);">JPEG 质量
+                                                (0-1)</label>
+                                            <input type="number" id="jpegQuality" value="0.9" min="0.1" max="1"
+                                                step="0.1" class="w-full px-3 py-2 rounded-lg text-sm form-input">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第二排：参考图输入区 + 提示词输入区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- 左侧：参考图输入区 -->
+            <div class="glass-panel rounded-2xl p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        参考图片
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs px-2 py-1 rounded"
+                            style="background: var(--bg-input); color: var(--text-muted);" id="imageCount">0 / 14</span>
+                        <button onclick="clearAllImages()" class="text-xs transition-colors"
+                            style="color: #ef4444;">清空</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-2" id="imageGrid">
+                    <!-- Slots generated by JS -->
+                </div>
+                <p class="text-xs mt-3 text-center" style="color: var(--text-muted);">提示：鼠标悬停后按 Ctrl+V 粘贴图片，或拖拽图片到此处</p>
+            </div>
+
+            <!-- 右侧：提示词输入区 -->
+            <div class="glass-panel rounded-2xl p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        提示词
+                    </h2>
+                    <span class="text-xs px-2 py-1 rounded"
+                        style="background: var(--bg-input); color: var(--text-muted);">输入 @ 引用图片</span>
+                </div>
+
+                <div class="textarea-wrapper">
+                    <div id="prompt"
+                        class="prompt-editor flex-1 px-4 py-3 rounded-lg focus:ring-2 outline-none transition-all text-sm custom-scrollbar pr-12"
+                        contenteditable="true" data-placeholder="描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中"></div>
+
+                    <button type="button" onclick="toggleMentionPopup()" class="mention-btn" id="mentionBtn"
+                        title="插入图片引用">@</button>
+
+                    <!-- 弹出式引用选择面板 -->
+                    <div id="mentionPopup" class="mention-popup">
+                        <div class="mention-popup-header">
+                            <span>选择图片引用</span>
+                            <span class="hint">ESC 关闭</span>
+                        </div>
+                        <div class="mention-popup-list custom-scrollbar" id="mentionPopupList">
+                            <!-- 动态填充 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生图参数：宽高比和分辨率 -->
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium" style="color: var(--text-muted);">宽高比</label>
+                        <select id="aspectRatio" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select">
+                            <option value="">默认 (Default)</option>
+                            <option value="1:1">1:1 (正方形)</option>
+                            <option value="2:3">2:3 (纵向)</option>
+                            <option value="3:2">3:2 (横向)</option>
+                            <option value="3:4">3:4 (纵向)</option>
+                            <option value="4:3">4:3 (横向)</option>
+                            <option value="4:5">4:5 (纵向)</option>
+                            <option value="5:4">5:4 (横向)</option>
+                            <option value="9:16">9:16 (手机竖屏)</option>
+                            <option value="16:9">16:9 (宽屏)</option>
+                            <option value="21:9">21:9 (超宽屏)</option>
+                            <option value="1:4">1:4 (长图/海报)</option>
+                            <option value="4:1">4:1 (Banner)</option>
+                            <option value="1:8">1:8 (极长图)</option>
+                            <option value="8:1">8:1 (极宽图)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium" style="color: var(--text-muted);">分辨率</label>
+                        <select id="resolution" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select">
+                            <option value="">默认 (Auto)</option>
+                            <option value="1K">1K </option>
+                            <option value="2K">2K </option>
+                            <option value="4K">4K </option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="generateImage()" id="generateBtn"
+                    class="w-full mt-4 py-3 rounded-xl font-semibold text-base shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);">
+                    <span id="btnText">生成图像</span>
+                    <div id="btnLoader" class="loader hidden"></div>
+                </button>
+
+                <div id="messageArea" class="hidden rounded-lg p-3 text-sm mt-3"></div>
+            </div>
+        </div>
+
+        <!-- 第三排：结果预览区 -->
+        <div id="resultArea" class="glass-panel rounded-2xl p-5 hidden">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5" style="color: var(--accent-green);" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                生成结果
+            </h2>
+            <div class="relative group result-preview-container rounded-lg" style="background: var(--bg-input);">
+                <img id="resultImage" class="rounded-lg shadow-2xl" />
+                <div
+                    class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-4">
+                    <button onclick="openImageModal(document.getElementById('resultImage').src)" class="result-zoom-btn"
+                        title="放大预览">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                    </button>
+                    <a id="downloadLink" href="#" target="_blank" download
+                        class="px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                        style="background: var(--accent-blue); color: white;">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        下载原图
+                    </a>
+                </div>
+            </div>
+            <div id="jsonResult" class="mt-4 p-4 rounded-lg overflow-x-auto text-xs font-mono hidden"
+                style="background: var(--bg-input); color: var(--text-muted);"></div>
+        </div>
+
+        <!-- 第四排：历史记录区 -->
+        <div class="glass-panel rounded-2xl p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    生成历史
+                </h2>
+                <span id="historyCount" class="text-xs px-2 py-1 rounded"
+                    style="background: var(--bg-input); color: var(--text-muted);">0</span>
+            </div>
+            <div id="historyContainer" class="history-container custom-scrollbar">
+                <div class="text-center py-8 text-sm flex-shrink-0 w-full" style="color: var(--text-muted);">
+                    暂无历史记录
                 </div>
             </div>
         </div>
@@ -630,14 +1038,16 @@
     <script>
         // Global state
         let activeSlot = null;
-        const imageFiles = []; // 动态数组，不预留固定位置
+        const imageFiles = [];
         let isMentionPopupOpen = false;
         let editingChip = null;
         let selectedIndex = -1;
-        let popupKeyword = '';  // 用于过滤的关键词
-        let keyboardSelectedIndex = -1;  // 键盘选择的索引
-        let savedRange = null;  // 保存的光标位置
-        
+        let popupKeyword = '';
+        let keyboardSelectedIndex = -1;
+        let savedRange = null;
+        let isSettingsDrawerOpen = false;
+        let currentTheme = 'dark';
+
         // IndexedDB 相关
         const DB_NAME = 'NanoBananaDB';
         const DB_VERSION = 1;
@@ -645,6 +1055,7 @@
         let db = null;
 
         document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
             initImageGrid();
             loadSavedConfig();
             setupPasteListener();
@@ -654,17 +1065,70 @@
             });
         });
 
+        // ==================== 主题管理 ====================
+        function initTheme() {
+            const savedTheme = localStorage.getItem('nanoBananaTheme') || 'dark';
+            setTheme(savedTheme, false);
+
+            // 监听系统主题变化
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (currentTheme === 'auto') {
+                        applyTheme(e.matches ? 'dark' : 'light');
+                    }
+                });
+            }
+        }
+
+        function setTheme(theme, save = true) {
+            currentTheme = theme;
+
+            // 更新按钮状态
+            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`theme-${theme}`)?.classList.add('active');
+
+            if (save) {
+                localStorage.setItem('nanoBananaTheme', theme);
+            }
+
+            if (theme === 'auto') {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light');
+            } else {
+                applyTheme(theme);
+            }
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        // ==================== 设置抽屉 ====================
+        function toggleSettingsDrawer() {
+            const drawer = document.getElementById('settingsDrawer');
+            const icon = document.getElementById('settingsDrawerIcon');
+            isSettingsDrawerOpen = !isSettingsDrawerOpen;
+
+            if (isSettingsDrawerOpen) {
+                drawer.classList.add('open');
+                icon.classList.add('open');
+            } else {
+                drawer.classList.remove('open');
+                icon.classList.remove('open');
+            }
+        }
+
         // ==================== IndexedDB 操作 ====================
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
+
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => {
                     db = request.result;
                     resolve(db);
                 };
-                
+
                 request.onupgradeneeded = (event) => {
                     const database = event.target.result;
                     if (!database.objectStoreNames.contains(STORE_NAME)) {
@@ -681,16 +1145,16 @@
                     reject(new Error('Database not initialized'));
                     return;
                 }
-                
+
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                
+
                 const item = {
                     imageData: imageData,
                     prompt: prompt,
                     timestamp: Date.now()
                 };
-                
+
                 const request = store.add(item);
                 request.onsuccess = () => {
                     cleanupOldHistory().then(() => resolve(request.result));
@@ -705,12 +1169,12 @@
                     reject(new Error('Database not initialized'));
                     return;
                 }
-                
+
                 const transaction = db.transaction([STORE_NAME], 'readonly');
                 const store = transaction.objectStore(STORE_NAME);
                 const index = store.index('timestamp');
                 const request = index.openCursor(null, 'prev');
-                
+
                 const results = [];
                 request.onsuccess = (event) => {
                     const cursor = event.target.result;
@@ -731,7 +1195,7 @@
                     reject(new Error('Database not initialized'));
                     return;
                 }
-                
+
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.delete(id);
@@ -746,7 +1210,7 @@
                     reject(new Error('Database not initialized'));
                     return;
                 }
-                
+
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.clear();
@@ -758,7 +1222,7 @@
         async function cleanupOldHistory() {
             const limit = parseInt(document.getElementById('historyLimit').value) || 20;
             const all = await getAllHistory();
-            
+
             if (all.length > limit) {
                 const toDelete = all.slice(limit);
                 for (const item of toDelete) {
@@ -770,32 +1234,32 @@
         async function loadHistory() {
             try {
                 const history = await getAllHistory();
-                const grid = document.getElementById('historyGrid');
+                const container = document.getElementById('historyContainer');
                 const countEl = document.getElementById('historyCount');
-                
+
                 countEl.textContent = history.length;
-                
+
                 if (history.length === 0) {
-                    grid.innerHTML = `
-                        <div class="col-span-2 text-center text-slate-500 py-8 text-sm">
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-sm flex-shrink-0 w-full" style="color: var(--text-muted);">
                             暂无历史记录
                         </div>
                     `;
                     return;
                 }
-                
-                grid.innerHTML = history.map(item => `
+
+                container.innerHTML = history.map(item => `
                     <div class="history-item">
                         <img src="${item.imageData}" alt="Generated" loading="lazy">
                         <div class="history-overlay">
                             <button class="history-btn" onclick="openImageModal('${item.imageData}')" title="放大预览">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
                             </button>
                             <button class="history-btn" onclick="downloadHistoryImage(${item.id})" title="下载">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                             </button>
                             <button class="history-btn" onclick="deleteHistoryItem(${item.id}).then(() => loadHistory())" title="删除">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </div>
                         <div class="history-time">${formatTime(item.timestamp)}</div>
@@ -810,12 +1274,12 @@
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
-            
+
             if (diff < 60000) return '刚刚';
             if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
             if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
             if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`;
-            
+
             return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
         }
 
@@ -836,7 +1300,7 @@
 
         async function clearHistory() {
             if (!confirm('确定要清除所有历史记录吗？此操作不可恢复。')) return;
-            
+
             try {
                 await clearAllHistory();
                 await loadHistory();
@@ -861,57 +1325,46 @@
             document.body.style.overflow = '';
         }
 
-        // ==================== 高级选项抽屉 ====================
-        function toggleAdvancedDrawer() {
-            const drawer = document.getElementById('advancedDrawer');
-            const icon = document.getElementById('drawerToggleIcon');
-            drawer.classList.toggle('open');
-            icon.classList.toggle('open');
-        }
-
         // ==================== 图片压缩 ====================
         async function compressImage(file) {
             const enableCompression = document.getElementById('enableCompression').checked;
             if (!enableCompression) {
                 return file;
             }
-            
+
             const maxEdge = parseInt(document.getElementById('maxEdgeLength').value) || 2560;
             const quality = parseFloat(document.getElementById('jpegQuality').value) || 0.9;
-            
+
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 const url = URL.createObjectURL(file);
-                
+
                 img.onload = () => {
                     URL.revokeObjectURL(url);
-                    
+
                     let { width, height } = img;
                     const maxDim = Math.max(width, height);
-                    
-                    // 如果图片尺寸已经小于限制，且质量为1.0，直接返回原文件
+
                     if (maxDim <= maxEdge && quality >= 1.0) {
                         resolve(file);
                         return;
                     }
-                    
-                    // 计算缩放比例
+
                     if (maxDim > maxEdge) {
                         const scale = maxEdge / maxDim;
                         width = Math.round(width * scale);
                         height = Math.round(height * scale);
                     }
-                    
+
                     const canvas = document.createElement('canvas');
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
-                    
-                    // 使用高质量缩放
+
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(img, 0, 0, width, height);
-                    
+
                     canvas.toBlob((blob) => {
                         if (blob) {
                             const compressedFile = new File([blob], file.name, {
@@ -924,114 +1377,111 @@
                         }
                     }, 'image/jpeg', quality);
                 };
-                
+
                 img.onerror = () => {
                     URL.revokeObjectURL(url);
                     reject(new Error('Failed to load image'));
                 };
-                
+
                 img.src = url;
             });
         }
 
-        // Initialize Image Grid - 动态渲染，只显示已上传图片和添加按钮
+        // Initialize Image Grid
         function initImageGrid() {
             renderImageGrid();
         }
-        
-        // 渲染图片网格 - 只显示有图片的项 + 一个添加按钮
+
         function renderImageGrid() {
             const grid = document.getElementById('imageGrid');
+            const countEl = document.getElementById('imageCount');
             grid.innerHTML = '';
-            
-            // 渲染已上传的图片（只渲染非null的项）
+
             const validImages = imageFiles.filter(f => f !== null);
-            
-            for(let i=0; i<imageFiles.length; i++) {
+            countEl.textContent = `${validImages.length} / 14`;
+
+            for (let i = 0; i < imageFiles.length; i++) {
                 const file = imageFiles[i];
-                if (!file) continue; // 跳过空位
-                
+                if (!file) continue;
+
                 const slot = document.createElement('div');
-                slot.className = 'image-slot pastable-indicator relative border-2 border-dashed border-slate-600 rounded-xl overflow-hidden cursor-pointer bg-slate-800/30 hover:bg-slate-800/50 group';
+                slot.className = 'image-slot pastable-indicator relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer group';
+                slot.style.borderColor = 'var(--border-input)';
                 slot.id = `slot-${i}`;
                 slot.ondragover = (e) => handleDragOver(e, i);
                 slot.ondragleave = (e) => handleDragLeave(e, i);
                 slot.ondrop = (e) => handleDrop(e, i);
                 slot.onmouseenter = () => activeSlot = i;
                 slot.onmouseleave = () => activeSlot = null;
-                
-                // 使用FileReader来显示图片（避免重复创建ObjectURL）
+
                 const reader = new FileReader();
                 reader.onload = ((idx, slotElement) => (e) => {
                     const img = slotElement.querySelector('img');
                     if (img) img.src = e.target.result;
                 })(i, slot);
                 reader.readAsDataURL(file);
-                
+
                 slot.innerHTML = `
                     <input type="file" id="file-${i}" accept="image/*" onchange="handleFileSelect(event, ${i})">
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-slate-400 transition-colors hidden" id="placeholder-${i}">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center hidden" id="placeholder-${i}" style="color: var(--text-muted);">
                         <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span class="text-xs">点击或拖拽</span>
                     </div>
                     <img id="preview-${i}" class="absolute inset-0 w-full h-full object-cover" />
-                    <span class="img-tag" id="tag-${i}">@img${i+1}</span>
+                    <span class="img-tag" id="tag-${i}">@img${i + 1}</span>
                     <button onclick="removeImage(event, ${i})" id="remove-${i}" class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white text-xs z-10 shadow-lg">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 `;
                 grid.appendChild(slot);
             }
-            
-            // 如果还没满14个，显示添加按钮
+
             if (validImages.length < 14) {
                 const addSlot = document.createElement('div');
-                addSlot.className = 'image-slot pastable-indicator relative border-2 border-dashed border-slate-600 rounded-xl overflow-hidden cursor-pointer bg-slate-800/30 hover:bg-slate-800/50 hover:border-blue-500 group transition-all';
+                addSlot.className = 'image-slot pastable-indicator relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer group transition-all';
+                addSlot.style.borderColor = 'var(--border-input)';
+                addSlot.style.background = 'var(--slot-bg)';
                 addSlot.ondragover = (e) => { e.preventDefault(); addSlot.classList.add('dragover'); };
                 addSlot.ondragleave = (e) => { e.preventDefault(); addSlot.classList.remove('dragover'); };
                 addSlot.ondrop = (e) => handleDropOnAddButton(e);
-                // 粘贴监听需要 activeSlot，设置为特殊值 -1 表示"添加新位置"
                 addSlot.onmouseenter = () => activeSlot = -1;
                 addSlot.onmouseleave = () => activeSlot = null;
-                
-                // 创建隐藏的 input file 元素
+
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
                 fileInput.id = 'file-add-new';
                 fileInput.accept = 'image/*';
                 fileInput.style.display = 'none';
                 fileInput.onchange = (e) => handleAddNewImage(e);
-                
+
                 addSlot.onclick = () => fileInput.click();
                 addSlot.innerHTML = `
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
-                        <svg class="w-10 h-10 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        <span class="text-xs">添加图片</span>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center transition-colors" style="color: var(--text-muted);">
+                        <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span class="text-xs">添加</span>
                     </div>
                 `;
                 addSlot.appendChild(fileInput);
                 grid.appendChild(addSlot);
             }
         }
-        
-        // 处理点击添加按钮后的文件选择
+
         async function handleAddNewImage(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             const validCount = imageFiles.filter(f => f !== null).length;
             if (validCount >= 14) {
                 showMessage('最多只能上传14张参考图', 'error');
                 return;
             }
-            
-            // 找到第一个空位（null）或在数组末尾添加
+
             let targetIndex = imageFiles.findIndex(f => f === null);
             if (targetIndex === -1) {
                 targetIndex = imageFiles.length;
                 imageFiles.push(null);
             }
-            
+
             try {
                 const compressedFile = await compressImage(file);
                 imageFiles[targetIndex] = compressedFile;
@@ -1042,12 +1492,11 @@
                 renderImageGrid();
             }
         }
-        
-        // 拖拽到添加按钮
+
         async function handleDropOnAddButton(e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             const files = e.dataTransfer.files;
             if (files.length > 0 && files[0].type.startsWith('image/')) {
                 const validCount = imageFiles.filter(f => f !== null).length;
@@ -1055,13 +1504,12 @@
                     showMessage('最多只能上传14张参考图', 'error');
                     return;
                 }
-                // 找到第一个空位或在末尾添加
                 let newIndex = imageFiles.findIndex(f => f === null);
                 if (newIndex === -1) {
                     newIndex = imageFiles.length;
                     imageFiles.push(null);
                 }
-                
+
                 try {
                     const compressedFile = await compressImage(files[0]);
                     imageFiles[newIndex] = compressedFile;
@@ -1088,27 +1536,22 @@
             const btn = document.getElementById('mentionBtn');
             const list = document.getElementById('mentionPopupList');
             const editor = document.getElementById('prompt');
-            
-            // 保存当前光标位置
+
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
                 savedRange = sel.getRangeAt(0).cloneRange();
             }
-            
+
             popupKeyword = keyword.toLowerCase();
             keyboardSelectedIndex = -1;
-            
-            // 填充列表
+
             renderMentionList();
-            
-            // 定位弹出框
             positionPopup();
-            
+
             popup.classList.add('active');
             btn.classList.add('active');
             isMentionPopupOpen = true;
-            
-            // 聚焦到编辑器
+
             editor.focus();
         }
 
@@ -1116,12 +1559,11 @@
             const popup = document.getElementById('mentionPopup');
             const editor = document.getElementById('prompt');
             const editorRect = editor.getBoundingClientRect();
-            
-            // 获取光标位置
+
             const sel = window.getSelection();
             let cursorX = editorRect.left + 20;
             let cursorY = editorRect.top + 50;
-            
+
             if (sel.rangeCount > 0) {
                 const range = sel.getRangeAt(0);
                 const rects = range.getClientRects();
@@ -1131,18 +1573,17 @@
                     cursorY = rect.bottom + 5;
                 }
             }
-            
-            // 确保不超出视口
+
             const popupWidth = 220;
             const popupHeight = 280;
-            
+
             if (cursorX + popupWidth > window.innerWidth) {
                 cursorX = window.innerWidth - popupWidth - 20;
             }
             if (cursorY + popupHeight > window.innerHeight) {
                 cursorY = editorRect.top - popupHeight - 5;
             }
-            
+
             popup.style.left = (cursorX - editorRect.left) + 'px';
             popup.style.top = (cursorY - editorRect.top) + 'px';
         }
@@ -1150,29 +1591,27 @@
         function renderMentionList() {
             const list = document.getElementById('mentionPopupList');
             list.innerHTML = '';
-            
+
             let hasImages = false;
             let visibleCount = 0;
-            
-            // 遍历已上传的图片
+
             for (let i = 0; i < imageFiles.length; i++) {
                 if (imageFiles[i]) {
-                    const tagName = `img${i+1}`;
-                    // 过滤
+                    const tagName = `img${i + 1}`;
                     if (popupKeyword && !tagName.toLowerCase().includes(popupKeyword)) {
                         continue;
                     }
-                    
+
                     hasImages = true;
                     const item = document.createElement('div');
                     item.className = 'mention-popup-item';
                     item.dataset.index = i;
                     item.dataset.visibleIndex = visibleCount;
-                    
+
                     const previewSrc = URL.createObjectURL(imageFiles[i]);
                     item.innerHTML = `
-                        <img src="${previewSrc}" alt="img${i+1}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%231e293b%22 width=%2240%22 height=%2240%22/><text fill=%22%2360a5fa%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22>${i+1}</text></svg>'">
-                        <span>@img${i+1}</span>
+                        <img src="${previewSrc}" alt="img${i + 1}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%231e293b%22 width=%2240%22 height=%2240%22/><text fill=%22%2360a5fa%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22>${i + 1}</text></svg>'">
+                        <span>@img${i + 1}</span>
                     `;
                     item.onclick = () => selectImageForInsert(i);
                     item.onmouseenter = () => {
@@ -1183,7 +1622,7 @@
                     visibleCount++;
                 }
             }
-            
+
             if (!hasImages) {
                 list.innerHTML = `
                     <div class="mention-popup-empty">
@@ -1202,7 +1641,7 @@
         function closeMentionPopup() {
             const popup = document.getElementById('mentionPopup');
             const btn = document.getElementById('mentionBtn');
-            
+
             popup.classList.remove('active');
             btn.classList.remove('active');
             isMentionPopupOpen = false;
@@ -1215,72 +1654,60 @@
 
         function selectImageForInsert(index) {
             const editor = document.getElementById('prompt');
-            
-            // 标签块 HTML
+
             const chipInner = `@img${index + 1} <svg style="width:12px;height:12px;margin-left:2px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
 
             if (editingChip) {
-                // 修改已有标签
                 editingChip.dataset.index = index;
                 editingChip.innerHTML = chipInner;
             } else {
-                // 恢复焦点到编辑器
                 editor.focus();
-                
-                // 使用保存的 range，或获取当前 range
+
                 const sel = window.getSelection();
                 let range = savedRange;
-                
+
                 if (!range && sel.rangeCount > 0) {
                     range = sel.getRangeAt(0);
                 }
-                
+
                 if (range) {
-                    // 移除之前的 range，使用克隆的 range
                     sel.removeAllRanges();
                     sel.addRange(range);
-                    
-                    // 检查是否需要删除输入的@和关键词
+
                     if (popupKeyword !== null || isMentionPopupOpen) {
                         const textNode = range.startContainer;
                         if (textNode.nodeType === Node.TEXT_NODE) {
                             const text = textNode.textContent;
                             const cursorPos = range.startOffset;
-                            // 查找@的位置
                             const beforeCursor = text.substring(0, cursorPos);
                             const atIndex = beforeCursor.lastIndexOf('@');
                             if (atIndex !== -1) {
-                                // 删除从@到光标的内容
                                 range.setStart(textNode, atIndex);
                                 range.setEnd(textNode, cursorPos);
                                 range.deleteContents();
                             }
                         }
                     }
-                    
-                    // 创建标签元素
+
                     const chip = document.createElement('span');
                     chip.className = 'mention-chip';
                     chip.contentEditable = 'false';
                     chip.dataset.index = index;
                     chip.setAttribute('onclick', 'editExistingMention(event, this)');
                     chip.innerHTML = chipInner;
-                    
-                    // 插入标签
+
                     range.insertNode(chip);
-                    
-                    // 插入空格
+
                     const space = document.createTextNode('\u00A0');
                     chip.parentNode.insertBefore(space, chip.nextSibling);
-                    
-                    // 移动光标到空格后
+
                     range.setStart(space, 1);
                     range.setEnd(space, 1);
                     sel.removeAllRanges();
                     sel.addRange(range);
                 }
             }
-            
+
             savedRange = null;
             closeMentionPopup();
         }
@@ -1299,18 +1726,15 @@
 
         function setupMentionSystem() {
             const editor = document.getElementById('prompt');
-            
-            // 粘贴纯文本
-            editor.addEventListener('paste', function(e) {
+
+            editor.addEventListener('paste', function (e) {
                 e.preventDefault();
                 const text = (e.originalEvent || e).clipboardData.getData('text/plain');
                 document.execCommand('insertText', false, text);
             });
 
-            // 键盘事件 - 输入@时触发
-            editor.addEventListener('keydown', function(e) {
+            editor.addEventListener('keydown', function (e) {
                 if (e.key === '@') {
-                    // 延迟打开，让@字符先输入
                     setTimeout(() => {
                         openMentionPopup();
                     }, 10);
@@ -1318,27 +1742,24 @@
                     handlePopupKeydown(e);
                 }
             });
-            
-            // 输入事件 - 用于过滤
-            editor.addEventListener('input', function(e) {
+
+            editor.addEventListener('input', function (e) {
                 if (isMentionPopupOpen) {
                     handlePopupInput(e);
                 }
             });
 
-            // 点击外部关闭弹出框
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 const popup = document.getElementById('mentionPopup');
                 const btn = document.getElementById('mentionBtn');
                 const editor = document.getElementById('prompt');
-                
+
                 if (!popup.contains(e.target) && e.target !== btn && e.target !== editor && !e.target.closest('.mention-chip')) {
                     closeMentionPopup();
                 }
             });
-            
-            // 窗口大小改变时重新定位
-            window.addEventListener('resize', function() {
+
+            window.addEventListener('resize', function () {
                 if (isMentionPopupOpen) {
                     positionPopup();
                 }
@@ -1348,14 +1769,13 @@
         function handlePopupKeydown(e) {
             const items = document.querySelectorAll('.mention-popup-item');
             const visibleCount = items.length;
-            
+
             if (visibleCount === 0) return;
-            
-            switch(e.key) {
+
+            switch (e.key) {
                 case 'Escape':
                     e.preventDefault();
                     closeMentionPopup();
-                    // 删除输入的@
                     removeAtBeforeCursor();
                     break;
                 case 'ArrowDown':
@@ -1382,26 +1802,22 @@
         }
 
         function handlePopupInput(e) {
-            // 获取光标前的文本
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
                 const range = sel.getRangeAt(0);
                 const textNode = range.startContainer;
-                
+
                 if (textNode.nodeType === Node.TEXT_NODE) {
                     const text = textNode.textContent;
                     const cursorPos = range.startOffset;
                     const beforeCursor = text.substring(0, cursorPos);
-                    
-                    // 查找@之后的关键词
+
                     const atIndex = beforeCursor.lastIndexOf('@');
                     if (atIndex !== -1) {
                         const keyword = beforeCursor.substring(atIndex + 1);
-                        // 检查是否包含空格或换行
                         if (!keyword.includes(' ') && !keyword.includes('\n')) {
                             popupKeyword = keyword;
                             renderMentionList();
-                            // 重新选择第一个
                             if (document.querySelectorAll('.mention-popup-item').length > 0) {
                                 keyboardSelectedIndex = 0;
                                 updateKeyboardSelection();
@@ -1411,7 +1827,6 @@
                     }
                 }
             }
-            // 如果没有找到有效的@关键词，关闭弹出框
             closeMentionPopup();
         }
 
@@ -1443,14 +1858,13 @@
             openMentionPopup();
         }
 
-        // 获取解析后的文本
         function getParsedPromptText() {
             const editor = document.getElementById('prompt');
             let text = '';
-            
+
             function traverse(node) {
                 if (node.nodeType === Node.TEXT_NODE) {
-                    text += node.textContent.replace(/\u00A0/g, ' '); 
+                    text += node.textContent.replace(/\u00A0/g, ' ');
                 } else if (node.nodeType === Node.ELEMENT_NODE) {
                     if (node.classList.contains('mention-chip')) {
                         const idx = parseInt(node.dataset.index) + 1;
@@ -1467,12 +1881,11 @@
                     }
                 }
             }
-            
+
             traverse(editor);
             return text.replace(/\n{3,}/g, '\n\n').trim();
         }
 
-        // 文件处理函数 - 现在使用异步处理压缩
         async function handleFileSelect(event, index) {
             const file = event.target.files[0];
             if (file) {
@@ -1481,7 +1894,6 @@
                     handleImageFile(compressedFile, index);
                 } catch (error) {
                     console.error('Image compression failed:', error);
-                    // 如果压缩失败，使用原图
                     handleImageFile(file, index);
                 }
             }
@@ -1503,7 +1915,7 @@
             e.preventDefault();
             e.stopPropagation();
             document.getElementById(`slot-${index}`).classList.remove('dragover');
-            
+
             const files = e.dataTransfer.files;
             if (files.length > 0 && files[0].type.startsWith('image/')) {
                 try {
@@ -1523,43 +1935,33 @@
 
         function removeImage(e, index) {
             e.stopPropagation();
-            // 将该位置设为null（保持索引不变，这样后面图片的引用不会乱）
             imageFiles[index] = null;
-            
-            // 清理尾部的空位（从后往前删除连续的null）
+
             while (imageFiles.length > 0 && imageFiles[imageFiles.length - 1] === null) {
                 imageFiles.pop();
             }
-            
-            // 重新渲染网格
+
             renderImageGrid();
-            
-            // 更新提示词中的引用编号（如果有引用了被删除的图片或后面的图片）
             updatePromptMentionsAfterRemoval(index);
-            
-            // 如果弹出框打开，刷新列表
+
             if (isMentionPopupOpen) {
                 renderMentionList();
             }
         }
-        
-        // 删除图片后更新提示词中的引用
+
         function updatePromptMentionsAfterRemoval(removedIndex) {
             const editor = document.getElementById('prompt');
             const chips = editor.querySelectorAll('.mention-chip');
-            
+
             chips.forEach(chip => {
                 const chipIndex = parseInt(chip.dataset.index);
                 if (chipIndex === removedIndex) {
-                    // 删除被移除图片的引用
                     const nextSibling = chip.nextSibling;
                     chip.remove();
-                    // 删除后面的空格
                     if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent === '\u00A0') {
                         nextSibling.remove();
                     }
                 } else if (chipIndex > removedIndex) {
-                    // 更新后面图片的引用编号
                     const newIndex = chipIndex - 1;
                     chip.dataset.index = newIndex;
                     chip.innerHTML = `@img${newIndex + 1} <svg style="width:12px;height:12px;margin-left:2px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
@@ -1570,7 +1972,6 @@
         function clearAllImages() {
             imageFiles.length = 0;
             renderImageGrid();
-            // 清除提示词中的所有引用
             const editor = document.getElementById('prompt');
             const chips = editor.querySelectorAll('.mention-chip');
             chips.forEach(chip => {
@@ -1585,7 +1986,7 @@
         function setupPasteListener() {
             document.addEventListener('paste', async (e) => {
                 if (document.activeElement.id === 'prompt' || document.activeElement.isContentEditable) return;
-                
+
                 const items = e.clipboardData.items;
                 for (let item of items) {
                     if (item.type.indexOf('image') !== -1) {
@@ -1594,31 +1995,27 @@
                             showMessage('最多只能上传14张参考图', 'error');
                             return;
                         }
-                        
+
                         const blob = item.getAsFile();
                         const file = new File([blob], `pasted-image-${Date.now()}.png`, { type: blob.type });
-                        
+
                         let targetIndex;
-                        // activeSlot === -1 表示悬停在添加按钮上
                         if (activeSlot === -1) {
-                            // 找第一个空位或在末尾添加新位置
                             targetIndex = imageFiles.findIndex(f => f === null);
                             if (targetIndex === -1) {
                                 targetIndex = imageFiles.length;
                                 imageFiles.push(null);
                             }
                         } else if (activeSlot !== null && activeSlot < imageFiles.length && !imageFiles[activeSlot]) {
-                            // 活动槽位有效且为空，粘贴到该位置
                             targetIndex = activeSlot;
                         } else {
-                            // 找第一个空位
                             targetIndex = imageFiles.findIndex(f => f === null);
                             if (targetIndex === -1) {
                                 targetIndex = imageFiles.length;
                                 imageFiles.push(null);
                             }
                         }
-                        
+
                         try {
                             const compressedFile = await compressImage(file);
                             imageFiles[targetIndex] = compressedFile;
@@ -1640,6 +2037,9 @@
                 baseUrl: document.getElementById('baseUrl').value,
                 apiKey: document.getElementById('apiKey').value,
                 modelName: document.getElementById('modelName').value,
+                aspectRatio: document.getElementById('aspectRatio').value,
+                resolution: document.getElementById('resolution').value,
+                responseFormat: document.querySelector('input[name="responseFormat"]:checked').value,
                 historyLimit: document.getElementById('historyLimit').value,
                 enableCompression: document.getElementById('enableCompression').checked,
                 maxEdgeLength: document.getElementById('maxEdgeLength').value,
@@ -1658,6 +2058,16 @@
                     document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
                     document.getElementById('apiKey').value = config.apiKey || '';
                     document.getElementById('modelName').value = config.modelName || 'gemini-2.0-flash-image-preview';
+                    if (config.aspectRatio !== undefined) {
+                        document.getElementById('aspectRatio').value = config.aspectRatio;
+                    }
+                    if (config.resolution !== undefined) {
+                        document.getElementById('resolution').value = config.resolution;
+                    }
+                    if (config.responseFormat) {
+                        const formatRadio = document.querySelector(`input[name="responseFormat"][value="${config.responseFormat}"]`);
+                        if (formatRadio) formatRadio.checked = true;
+                    }
                     document.getElementById('historyLimit').value = config.historyLimit || '20';
                     document.getElementById('enableCompression').checked = config.enableCompression || false;
                     document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
@@ -1673,6 +2083,9 @@
                 baseUrl: document.getElementById('baseUrl').value,
                 apiKey: document.getElementById('apiKey').value,
                 modelName: document.getElementById('modelName').value,
+                aspectRatio: document.getElementById('aspectRatio').value,
+                resolution: document.getElementById('resolution').value,
+                responseFormat: document.querySelector('input[name="responseFormat"]:checked').value,
                 historyLimit: document.getElementById('historyLimit').value,
                 enableCompression: document.getElementById('enableCompression').checked,
                 maxEdgeLength: document.getElementById('maxEdgeLength').value,
@@ -1683,7 +2096,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `nano-banana-config-${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `nano-banana-config-${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showMessage('配置已导出', 'success');
@@ -1692,7 +2105,7 @@
         function importConfig(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
@@ -1700,6 +2113,16 @@
                     document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
                     document.getElementById('apiKey').value = config.apiKey || '';
                     document.getElementById('modelName').value = config.modelName || 'gemini-2.0-flash-image-preview';
+                    if (config.aspectRatio !== undefined) {
+                        document.getElementById('aspectRatio').value = config.aspectRatio;
+                    }
+                    if (config.resolution !== undefined) {
+                        document.getElementById('resolution').value = config.resolution;
+                    }
+                    if (config.responseFormat) {
+                        const formatRadio = document.querySelector(`input[name="responseFormat"][value="${config.responseFormat}"]`);
+                        if (formatRadio) formatRadio.checked = true;
+                    }
                     document.getElementById('historyLimit').value = config.historyLimit || '20';
                     document.getElementById('enableCompression').checked = config.enableCompression || false;
                     document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
@@ -1734,10 +2157,6 @@
             }
 
             const validImages = imageFiles.filter(f => f !== null);
-            if (validImages.length === 0) {
-                showMessage('请至少上传一张参考图', 'error');
-                return;
-            }
 
             const btn = document.getElementById('generateBtn');
             const btnText = document.getElementById('btnText');
@@ -1748,13 +2167,29 @@
             hideMessage();
 
             try {
+                let currentImages = [...validImages];
+
+                // 如果没有输入参考图，则自动生成一张透明空图
+                if (currentImages.length === 0) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 1024;
+                    canvas.height = 1024;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    const blankImageFile = new File([blob], 'blank.png', { type: 'image/png' });
+                    currentImages.push(blankImageFile);
+                }
+
                 const formData = new FormData();
                 formData.append('model', model);
                 formData.append('prompt', prompt);
                 formData.append('response_format', responseFormat);
                 if (aspectRatio) formData.append('aspect_ratio', aspectRatio);
                 if (resolution) formData.append('image_size', resolution);
-                validImages.forEach(file => formData.append('image', file));
+
+                currentImages.forEach(file => formData.append('image', file));
 
                 const response = await fetch(`${baseUrl}/images/edits`, {
                     method: 'POST',
@@ -1771,10 +2206,9 @@
                 }
 
                 displayResult(data, responseFormat);
-                
-                // 保存到历史记录
+
                 await saveResultToHistory(data, responseFormat, prompt);
-                
+
                 showMessage('图像生成成功！', 'success');
 
             } catch (error) {
@@ -1790,22 +2224,20 @@
         async function saveResultToHistory(data, format, prompt) {
             try {
                 let imageData = null;
-                
+
                 if (format === 'b64_json' && data.data && data.data[0] && data.data[0].b64_json) {
                     imageData = `data:image/png;base64,${data.data[0].b64_json}`;
                 } else if (data.data && data.data[0] && data.data[0].url) {
-                    // 对于 URL 格式，我们需要先获取图片并转换为 base64
                     try {
                         const response = await fetch(data.data[0].url);
                         const blob = await response.blob();
                         imageData = await blobToBase64(blob);
                     } catch (e) {
                         console.error('Failed to fetch image from URL:', e);
-                        // 如果获取失败，直接使用 URL（虽然 IndexedDB 存储 URL 不如 base64 稳定）
                         imageData = data.data[0].url;
                     }
                 }
-                
+
                 if (imageData) {
                     await addHistoryItem(imageData, prompt);
                     await loadHistory();
@@ -1861,12 +2293,17 @@
         function showMessage(msg, type) {
             const area = document.getElementById('messageArea');
             area.textContent = msg;
-            area.classList.remove('hidden', 'bg-red-500/20', 'text-red-400', 'bg-green-500/20', 'text-green-400');
-            
+            area.classList.remove('hidden');
+            area.style.cssText = '';
+
             if (type === 'error') {
-                area.classList.add('bg-red-500/20', 'text-red-400', 'border', 'border-red-500/30');
+                area.style.background = 'rgba(239, 68, 68, 0.2)';
+                area.style.color = '#ef4444';
+                area.style.border = '1px solid rgba(239, 68, 68, 0.3)';
             } else {
-                area.classList.add('bg-green-500/20', 'text-green-400', 'border', 'border-green-500/30');
+                area.style.background = 'rgba(34, 197, 94, 0.2)';
+                area.style.color = '#22c55e';
+                area.style.border = '1px solid rgba(34, 197, 94, 0.3)';
             }
         }
 
@@ -1882,4 +2319,5 @@
         });
     </script>
 </body>
+
 </html>
