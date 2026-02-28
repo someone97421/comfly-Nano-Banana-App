@@ -1,4 +1,5 @@
-<img width="1605" height="1546" alt="image" src="https://github.com/user-attachments/assets/0da37a97-822a-4113-abeb-00f80ff6d6f2" />  
+<img width="1386" height="1231" alt="2026-02-28_23-04-13-0" src="https://github.com/user-attachments/assets/510a6769-49f7-47bf-aef1-90374ca7925d" />
+
 
 # 🎨 Nano-Banana AI 图像生成器
 
@@ -55,3 +56,5 @@ A lightweight, single-file HTML5 web application designed for AI image generatio
 3. **Add Images**: Hover over an image slot and press `Ctrl+V`, or click the slot to upload reference photos.
 4. **Write Prompt**: Describe your vision in the prompt box, using `@` to link your uploaded references.
 5. **Generate**: Click "Start Generation" and wait for the AI to bring your ideas to life.
+
+![cc9df55028beab9c17b1b9460b03d655](https://github.com/user-attachments/assets/04754801-43ee-4ff0-9c65-7cddbc347fa0)
