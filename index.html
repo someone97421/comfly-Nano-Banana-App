@@ -818,6 +818,24 @@
                                 </div>
                             </div>
 
+                            <!-- 调用模式 -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">调用模式</h4>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="requestMode" value="sync" checked
+                                            class="accent-blue-500">
+                                        <span class="text-sm" style="color: var(--text-secondary);">同步</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="requestMode" value="async"
+                                            class="accent-blue-500">
+                                        <span class="text-sm" style="color: var(--text-secondary);">异步</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs mt-1" style="color: var(--text-muted);">异步模式适合生成大图或高质量图片</p>
+                            </div>
+
                             <!-- 历史记录设置 -->
                             <div>
                                 <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">历史记录设置</h4>
@@ -1048,6 +1066,8 @@
         let savedRange = null;
         let isSettingsDrawerOpen = false;
         let currentTheme = 'dark';
+        let isGenerating = false;
+        let pollInterval = null;
 
         // IndexedDB 相关
         const DB_NAME = 'NanoBananaDB';
@@ -2069,6 +2089,10 @@
                         const formatRadio = document.querySelector(`input[name="responseFormat"][value="${config.responseFormat}"]`);
                         if (formatRadio) formatRadio.checked = true;
                     }
+                    if (config.requestMode) {
+                        const modeRadio = document.querySelector(`input[name="requestMode"][value="${config.requestMode}"]`);
+                        if (modeRadio) modeRadio.checked = true;
+                    }
                     document.getElementById('historyLimit').value = config.historyLimit || '20';
                     document.getElementById('enableCompression').checked = config.enableCompression || false;
                     document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
@@ -2124,6 +2148,10 @@
                         const formatRadio = document.querySelector(`input[name="responseFormat"][value="${config.responseFormat}"]`);
                         if (formatRadio) formatRadio.checked = true;
                     }
+                    if (config.requestMode) {
+                        const modeRadio = document.querySelector(`input[name="requestMode"][value="${config.requestMode}"]`);
+                        if (modeRadio) modeRadio.checked = true;
+                    }
                     document.getElementById('historyLimit').value = config.historyLimit || '20';
                     document.getElementById('enableCompression').checked = config.enableCompression || false;
                     document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
@@ -2138,6 +2166,93 @@
             event.target.value = '';
         }
 
+        // 轮询任务状态
+        async function pollTaskStatus(baseUrl, apiKey, taskId, responseFormat, prompt) {
+            const maxAttempts = 120; // 最多轮询120次（约10分钟，每次5秒）
+            let attempts = 0;
+
+            const poll = async () => {
+                attempts++;
+                
+                try {
+                    const response = await fetch(`${baseUrl}/images/tasks/${taskId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error?.message || `查询任务失败: HTTP ${response.status}`);
+                    }
+
+                    const taskData = data.data || data;
+                    const status = taskData.status;
+
+                    if (status === 'SUCCESS') {
+                        // 任务完成
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        isGenerating = false;
+
+                        // 显示结果
+                        displayResult(taskData.data || data, responseFormat);
+                        await saveResultToHistory(taskData.data || data, responseFormat, prompt);
+                        showMessage('图像生成成功！', 'success');
+                        updateGenerateButton(false);
+                    } else if (status === 'FAILURE') {
+                        // 任务失败
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        isGenerating = false;
+                        throw new Error(taskData.fail_reason || '任务生成失败');
+                    } else if (status === 'IN_PROGRESS') {
+                        // 任务处理中，更新进度
+                        const progress = taskData.progress || `${Math.min(Math.round(attempts / maxAttempts * 100), 99)}%`;
+                        updateGenerateButton(true, `生成中... ${progress}`);
+                    }
+
+                    if (attempts >= maxAttempts) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        isGenerating = false;
+                        throw new Error('任务超时，请稍后在历史记录中查看结果');
+                    }
+                } catch (error) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    isGenerating = false;
+                    updateGenerateButton(false);
+                    showMessage(`生成失败: ${error.message}`, 'error');
+                    console.error('Poll error:', error);
+                }
+            };
+
+            // 立即执行一次，然后定期轮询
+            await poll();
+            pollInterval = setInterval(poll, 5000); // 每5秒轮询一次
+        }
+
+        // 更新生成按钮状态
+        function updateGenerateButton(loading, text = '生成中...') {
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btnText');
+            const loader = document.getElementById('btnLoader');
+
+            if (loading) {
+                btn.disabled = true;
+                btnText.textContent = text;
+                loader.classList.remove('hidden');
+            } else {
+                btn.disabled = false;
+                btnText.textContent = '生成图像';
+                loader.classList.add('hidden');
+            }
+        }
+
         // 图像生成
         async function generateImage() {
             const baseUrl = document.getElementById('baseUrl').value.trim();
@@ -2147,6 +2262,8 @@
             const aspectRatio = document.getElementById('aspectRatio').value;
             const resolution = document.getElementById('resolution').value;
             const responseFormat = document.querySelector('input[name="responseFormat"]:checked').value;
+            const requestMode = document.querySelector('input[name="requestMode"]:checked').value;
+            const isAsync = requestMode === 'async';
 
             if (!baseUrl || !apiKey) {
                 showMessage('请填写 API Base URL 和 API Key', 'error');
@@ -2159,12 +2276,14 @@
 
             const validImages = imageFiles.filter(f => f !== null);
 
-            const btn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const loader = document.getElementById('btnLoader');
-            btn.disabled = true;
-            btnText.textContent = '生成中...';
-            loader.classList.remove('hidden');
+            // 如果正在生成中，则不允许重复提交
+            if (isGenerating) {
+                showMessage('正在生成中，请稍候...', 'error');
+                return;
+            }
+
+            isGenerating = true;
+            updateGenerateButton(true, isAsync ? '提交任务...' : '生成中...');
             hideMessage();
 
             try {
@@ -2192,7 +2311,13 @@
 
                 currentImages.forEach(file => formData.append('image', file));
 
-                const response = await fetch(`${baseUrl}/images/edits`, {
+                // 构建URL，异步模式添加 query 参数
+                let url = `${baseUrl}/images/edits`;
+                if (isAsync) {
+                    url += '?async=true';
+                }
+
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${apiKey}`
@@ -2206,19 +2331,28 @@
                     throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                displayResult(data, responseFormat);
-
-                await saveResultToHistory(data, responseFormat, prompt);
-
-                showMessage('图像生成成功！', 'success');
+                if (isAsync) {
+                    // 异步模式：获取 task_id 并开始轮询
+                    const taskId = data.data?.task_id || data.task_id;
+                    if (!taskId) {
+                        throw new Error('未能获取任务ID');
+                    }
+                    showMessage(`任务已提交，正在轮询状态... (任务ID: ${taskId.substring(0, 8)}...)`, 'success');
+                    await pollTaskStatus(baseUrl, apiKey, taskId, responseFormat, prompt);
+                } else {
+                    // 同步模式：直接显示结果
+                    displayResult(data, responseFormat);
+                    await saveResultToHistory(data, responseFormat, prompt);
+                    showMessage('图像生成成功！', 'success');
+                    isGenerating = false;
+                    updateGenerateButton(false);
+                }
 
             } catch (error) {
                 console.error('Generation error:', error);
                 showMessage(`生成失败: ${error.message}`, 'error');
-            } finally {
-                btn.disabled = false;
-                btnText.textContent = '生成图像';
-                loader.classList.add('hidden');
+                isGenerating = false;
+                updateGenerateButton(false);
             }
         }
 
