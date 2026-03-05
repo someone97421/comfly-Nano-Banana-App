@@ -534,6 +534,159 @@
             transform: scale(1.1);
         }
 
+        /* 任务列表样式 */
+        .task-list-container {
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-item {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--slot-bg);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            background: var(--slot-hover);
+            border-color: var(--accent-blue);
+        }
+
+        .task-item.selected {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .task-item.pending {
+            border-left: 3px solid var(--text-muted);
+        }
+
+        .task-item.submitting {
+            border-left: 3px solid var(--accent-purple);
+        }
+
+        .task-item.polling {
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .task-item.completed {
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .task-item.failed {
+            border-left: 3px solid #ef4444;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .task-id {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .task-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .task-status.pending {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        .task-status.submitting {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .task-status.polling {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .task-status.completed {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .task-status.failed {
+            background: #ef4444;
+            color: white;
+        }
+
+        .task-prompt {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 6px;
+        }
+
+        .task-progress-bar {
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .task-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .task-progress-text {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-align: right;
+        }
+
+        /* 任务调试信息面板 */
+        .task-debug-panel {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+        }
+
+        .task-debug-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-debug-content {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
         /* 输入框统一样式 */
         .form-input {
             background: var(--bg-input);
@@ -800,42 +953,7 @@
                             </svg>
                             高级选项
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <!-- 返回格式 -->
-                            <div>
-                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">返回格式</h4>
-                                <div class="flex gap-4">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="responseFormat" value="url" checked
-                                            class="accent-blue-500">
-                                        <span class="text-sm" style="color: var(--text-secondary);">URL 链接</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="responseFormat" value="b64_json"
-                                            class="accent-blue-500">
-                                        <span class="text-sm" style="color: var(--text-secondary);">Base64</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- 调用模式 -->
-                            <div>
-                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">调用模式</h4>
-                                <div class="flex gap-4">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="requestMode" value="sync" checked
-                                            class="accent-blue-500">
-                                        <span class="text-sm" style="color: var(--text-secondary);">同步</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="requestMode" value="async"
-                                            class="accent-blue-500">
-                                        <span class="text-sm" style="color: var(--text-secondary);">异步</span>
-                                    </label>
-                                </div>
-                                <p class="text-xs mt-1" style="color: var(--text-muted);">异步模式适合生成大图或高质量图片</p>
-                            </div>
-
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- 历史记录设置 -->
                             <div>
                                 <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">历史记录设置</h4>
@@ -865,7 +983,7 @@
                                     <div class="flex items-center justify-between">
                                         <label class="text-sm" style="color: var(--text-secondary);">启用图片压缩</label>
                                         <label class="toggle-switch">
-                                            <input type="checkbox" id="enableCompression">
+                                            <input type="checkbox" id="enableCompression" checked>
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
@@ -884,6 +1002,24 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- 并发队列设置 -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-3" style="color: var(--text-muted);">并发队列设置</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs mb-1 block" style="color: var(--text-muted);">最大并发数</label>
+                                        <input type="number" id="maxConcurrency" value="3" min="1" max="10"
+                                            class="w-full px-3 py-2 rounded-lg text-sm form-input">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs mb-1 block" style="color: var(--text-muted);">轮询间隔 (秒)</label>
+                                        <input type="number" id="pollInterval" value="5" min="2" max="30"
+                                            step="1" class="w-full px-3 py-2 rounded-lg text-sm form-input">
+                                    </div>
+                                </div>
+                                <p class="text-xs mt-2" style="color: var(--text-muted);">设置同时处理的最大任务数和轮询间隔</p>
                             </div>
                         </div>
                     </div>
@@ -1032,23 +1168,59 @@
                 style="background: var(--bg-input); color: var(--text-muted);"></div>
         </div>
 
-        <!-- 第四排：历史记录区 -->
-        <div class="glass-panel rounded-2xl p-5">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold flex items-center gap-2">
-                    <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    生成历史
-                </h2>
-                <span id="historyCount" class="text-xs px-2 py-1 rounded"
-                    style="background: var(--bg-input); color: var(--text-muted);">0</span>
+        <!-- 第四排：任务列表 + 历史记录区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- 左侧：任务列表 -->
+            <div class="glass-panel rounded-2xl p-5 lg:col-span-1">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        任务列表
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="taskCount" class="text-xs px-2 py-1 rounded"
+                            style="background: var(--bg-input); color: var(--text-muted);">0</span>
+                        <button onclick="clearAllTasks()" class="text-xs transition-colors px-2 py-1 rounded"
+                            style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+                            清理
+                        </button>
+                    </div>
+                </div>
+                <div id="taskContainer" class="task-list-container custom-scrollbar">
+                    <div class="text-center py-8 text-sm" style="color: var(--text-muted);">
+                        暂无任务
+                    </div>
+                </div>
             </div>
-            <div id="historyContainer" class="history-container custom-scrollbar">
-                <div class="text-center py-8 text-sm flex-shrink-0 w-full" style="color: var(--text-muted);">
-                    暂无历史记录
+
+            <!-- 右侧：生成历史 -->
+            <div class="glass-panel rounded-2xl p-5 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        生成历史
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="historyCount" class="text-xs px-2 py-1 rounded"
+                            style="background: var(--bg-input); color: var(--text-muted);">0</span>
+                        <button onclick="clearHistory()" class="text-xs transition-colors px-2 py-1 rounded"
+                            style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+                            清理
+                        </button>
+                    </div>
+                </div>
+                <div id="historyContainer" class="history-container custom-scrollbar">
+                    <div class="text-center py-8 text-sm flex-shrink-0 w-full" style="color: var(--text-muted);">
+                        暂无历史记录
+                    </div>
                 </div>
             </div>
         </div>
@@ -1066,8 +1238,12 @@
         let savedRange = null;
         let isSettingsDrawerOpen = false;
         let currentTheme = 'dark';
-        let isGenerating = false;
-        let pollInterval = null;
+        
+        // 任务队列管理
+        let taskQueue = []; // 等待执行的任务
+        let activeTasks = new Map(); // 正在执行的任务 (taskId -> taskInfo)
+        let runningTaskCount = 0; // 当前正在运行的任务数
+        let taskIdCounter = 0; // 本地任务ID计数器
 
         // IndexedDB 相关
         const DB_NAME = 'NanoBananaDB';
@@ -2060,11 +2236,12 @@
                 modelName: document.getElementById('modelName').value,
                 aspectRatio: document.getElementById('aspectRatio').value,
                 resolution: document.getElementById('resolution').value,
-                responseFormat: document.querySelector('input[name="responseFormat"]:checked').value,
                 historyLimit: document.getElementById('historyLimit').value,
                 enableCompression: document.getElementById('enableCompression').checked,
                 maxEdgeLength: document.getElementById('maxEdgeLength').value,
                 jpegQuality: document.getElementById('jpegQuality').value,
+                maxConcurrency: document.getElementById('maxConcurrency').value,
+                pollInterval: document.getElementById('pollInterval').value,
                 timestamp: new Date().toISOString()
             };
             localStorage.setItem('nanoBananaConfig', JSON.stringify(config));
@@ -2078,25 +2255,19 @@
                     const config = JSON.parse(saved);
                     document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
                     document.getElementById('apiKey').value = config.apiKey || '';
-                    document.getElementById('modelName').value = config.modelName || 'gemini-2.0-flash-image-preview';
+                    document.getElementById('modelName').value = config.modelName || 'gemini-3.1-flash-image-preview';
                     if (config.aspectRatio !== undefined) {
                         document.getElementById('aspectRatio').value = config.aspectRatio;
                     }
                     if (config.resolution !== undefined) {
                         document.getElementById('resolution').value = config.resolution;
                     }
-                    if (config.responseFormat) {
-                        const formatRadio = document.querySelector(`input[name="responseFormat"][value="${config.responseFormat}"]`);
-                        if (formatRadio) formatRadio.checked = true;
-                    }
-                    if (config.requestMode) {
-                        const modeRadio = document.querySelector(`input[name="requestMode"][value="${config.requestMode}"]`);
-                        if (modeRadio) modeRadio.checked = true;
-                    }
                     document.getElementById('historyLimit').value = config.historyLimit || '20';
-                    document.getElementById('enableCompression').checked = config.enableCompression || false;
+                    document.getElementById('enableCompression').checked = config.enableCompression !== false;
                     document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
                     document.getElementById('jpegQuality').value = config.jpegQuality || '0.9';
+                    document.getElementById('maxConcurrency').value = config.maxConcurrency || '3';
+                    document.getElementById('pollInterval').value = config.pollInterval || '5';
                 } catch (e) {
                     console.error('Failed to load config:', e);
                 }
@@ -2110,11 +2281,12 @@
                 modelName: document.getElementById('modelName').value,
                 aspectRatio: document.getElementById('aspectRatio').value,
                 resolution: document.getElementById('resolution').value,
-                responseFormat: document.querySelector('input[name="responseFormat"]:checked').value,
                 historyLimit: document.getElementById('historyLimit').value,
                 enableCompression: document.getElementById('enableCompression').checked,
                 maxEdgeLength: document.getElementById('maxEdgeLength').value,
                 jpegQuality: document.getElementById('jpegQuality').value,
+                maxConcurrency: document.getElementById('maxConcurrency').value,
+                pollInterval: document.getElementById('pollInterval').value,
                 timestamp: new Date().toISOString()
             };
             const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
@@ -2137,25 +2309,19 @@
                     const config = JSON.parse(e.target.result);
                     document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
                     document.getElementById('apiKey').value = config.apiKey || '';
-                    document.getElementById('modelName').value = config.modelName || 'gemini-2.0-flash-image-preview';
+                    document.getElementById('modelName').value = config.modelName || 'gemini-3.1-flash-image-preview';
                     if (config.aspectRatio !== undefined) {
                         document.getElementById('aspectRatio').value = config.aspectRatio;
                     }
                     if (config.resolution !== undefined) {
                         document.getElementById('resolution').value = config.resolution;
                     }
-                    if (config.responseFormat) {
-                        const formatRadio = document.querySelector(`input[name="responseFormat"][value="${config.responseFormat}"]`);
-                        if (formatRadio) formatRadio.checked = true;
-                    }
-                    if (config.requestMode) {
-                        const modeRadio = document.querySelector(`input[name="requestMode"][value="${config.requestMode}"]`);
-                        if (modeRadio) modeRadio.checked = true;
-                    }
                     document.getElementById('historyLimit').value = config.historyLimit || '20';
-                    document.getElementById('enableCompression').checked = config.enableCompression || false;
+                    document.getElementById('enableCompression').checked = config.enableCompression !== false;
                     document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
                     document.getElementById('jpegQuality').value = config.jpegQuality || '0.9';
+                    document.getElementById('maxConcurrency').value = config.maxConcurrency || '3';
+                    document.getElementById('pollInterval').value = config.pollInterval || '5';
                     saveConfig();
                     showMessage('配置已导入并保存', 'success');
                 } catch (err) {
@@ -2166,19 +2332,145 @@
             event.target.value = '';
         }
 
-        // 轮询任务状态
-        async function pollTaskStatus(baseUrl, apiKey, taskId, responseFormat, prompt) {
-            const maxAttempts = 120; // 最多轮询120次（约10分钟，每次5秒）
-            let attempts = 0;
+        // ==================== 任务队列管理 ====================
+        
+        // 创建新任务
+        function createTask(baseUrl, apiKey, model, prompt, aspectRatio, resolution, validImages) {
+            taskIdCounter++;
+            const localTaskId = `local-${Date.now()}-${taskIdCounter}`;
+            
+            const task = {
+                id: localTaskId,
+                baseUrl,
+                apiKey,
+                model,
+                prompt,
+                aspectRatio,
+                resolution,
+                images: validImages,
+                status: 'pending', // pending, submitting, polling, completed, failed
+                serverTaskId: null,
+                progress: '0%',
+                result: null,
+                error: null,
+                startTime: Date.now(),
+                pollTimer: null,
+                pollAttempts: 0
+            };
+            
+            taskQueue.push(task);
+            processTaskQueue();
+            return localTaskId;
+        }
 
+        // 处理任务队列
+        async function processTaskQueue() {
+            const maxConcurrency = parseInt(document.getElementById('maxConcurrency').value) || 3;
+            
+            // 如果当前运行任务已达最大并发数，则返回
+            if (runningTaskCount >= maxConcurrency) {
+                return;
+            }
+            
+            // 获取下一个待处理任务
+            const taskIndex = taskQueue.findIndex(t => t.status === 'pending');
+            if (taskIndex === -1) {
+                return;
+            }
+            
+            const task = taskQueue[taskIndex];
+            task.status = 'submitting';
+            runningTaskCount++;
+            
+            try {
+                await executeTask(task);
+            } catch (error) {
+                console.error('Task execution error:', error);
+                task.status = 'failed';
+                task.error = error.message;
+                runningTaskCount--;
+                updateTaskUI(task);
+                processTaskQueue(); // 尝试处理下一个任务
+            }
+        }
+
+        // 执行单个任务
+        async function executeTask(task) {
+            let currentImages = [...task.images];
+
+            // 如果没有输入参考图，则自动生成一张空白JPG图像
+            if (currentImages.length === 0) {
+                const blankImageFile = await createBlankJpgImage();
+                currentImages.push(blankImageFile);
+            }
+
+            const formData = new FormData();
+            formData.append('model', task.model);
+            formData.append('prompt', task.prompt);
+            formData.append('response_format', 'url'); // 默认URL格式
+            if (task.aspectRatio) formData.append('aspect_ratio', task.aspectRatio);
+            if (task.resolution) formData.append('image_size', task.resolution);
+
+            currentImages.forEach(file => formData.append('image', file));
+
+            // 异步模式添加 query 参数
+            const url = `${task.baseUrl}/images/edits?async=true`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${task.apiKey}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // 获取服务端任务ID并开始轮询
+            const serverTaskId = data.data?.task_id || data.task_id;
+            if (!serverTaskId) {
+                throw new Error('未能获取任务ID');
+            }
+
+            task.serverTaskId = serverTaskId;
+            task.status = 'polling';
+            updateTaskUI(task);
+
+            // 开始轮询
+            startPolling(task);
+        }
+
+        // 创建空白JPG图像
+        async function createBlankJpgImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            // 填充白色背景
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+            return new File([blob], 'blank.jpg', { type: 'image/jpeg' });
+        }
+
+        // 开始轮询任务状态
+        function startPolling(task) {
+            const pollInterval = (parseInt(document.getElementById('pollInterval').value) || 5) * 1000;
+            const maxAttempts = 120; // 最多轮询120次
+            
             const poll = async () => {
-                attempts++;
+                task.pollAttempts++;
                 
                 try {
-                    const response = await fetch(`${baseUrl}/images/tasks/${taskId}`, {
+                    const response = await fetch(`${task.baseUrl}/images/tasks/${task.serverTaskId}`, {
                         method: 'GET',
                         headers: {
-                            'Authorization': `Bearer ${apiKey}`,
+                            'Authorization': `Bearer ${task.apiKey}`,
                             'Content-Type': 'application/json'
                         }
                     });
@@ -2194,66 +2486,283 @@
 
                     if (status === 'SUCCESS') {
                         // 任务完成
-                        clearInterval(pollInterval);
-                        pollInterval = null;
-                        isGenerating = false;
-
-                        // 显示结果
-                        displayResult(taskData.data || data, responseFormat);
-                        await saveResultToHistory(taskData.data || data, responseFormat, prompt);
-                        showMessage('图像生成成功！', 'success');
-                        updateGenerateButton(false);
+                        clearInterval(task.pollTimer);
+                        task.status = 'completed';
+                        task.result = taskData.data || data;
+                        task.progress = '100%';
+                        runningTaskCount--;
+                        
+                        // 显示结果并保存到历史记录
+                        displayTaskResult(task);
+                        await saveTaskResultToHistory(task);
+                        updateTaskUI(task);
+                        
+                        // 尝试处理下一个任务
+                        processTaskQueue();
+                        
                     } else if (status === 'FAILURE') {
                         // 任务失败
-                        clearInterval(pollInterval);
-                        pollInterval = null;
-                        isGenerating = false;
-                        throw new Error(taskData.fail_reason || '任务生成失败');
+                        clearInterval(task.pollTimer);
+                        task.status = 'failed';
+                        task.error = taskData.fail_reason || '任务生成失败';
+                        runningTaskCount--;
+                        updateTaskUI(task);
+                        processTaskQueue(); // 尝试处理下一个任务
+                        
                     } else if (status === 'IN_PROGRESS') {
                         // 任务处理中，更新进度
-                        const progress = taskData.progress || `${Math.min(Math.round(attempts / maxAttempts * 100), 99)}%`;
-                        updateGenerateButton(true, `生成中... ${progress}`);
+                        task.progress = taskData.progress || `${Math.min(Math.round(task.pollAttempts / maxAttempts * 100), 99)}%`;
+                        updateTaskUI(task);
                     }
 
-                    if (attempts >= maxAttempts) {
-                        clearInterval(pollInterval);
-                        pollInterval = null;
-                        isGenerating = false;
-                        throw new Error('任务超时，请稍后在历史记录中查看结果');
+                    if (task.pollAttempts >= maxAttempts) {
+                        clearInterval(task.pollTimer);
+                        task.status = 'failed';
+                        task.error = '任务超时，请稍后在历史记录中查看结果';
+                        runningTaskCount--;
+                        updateTaskUI(task);
+                        processTaskQueue(); // 尝试处理下一个任务
                     }
                 } catch (error) {
-                    clearInterval(pollInterval);
-                    pollInterval = null;
-                    isGenerating = false;
-                    updateGenerateButton(false);
-                    showMessage(`生成失败: ${error.message}`, 'error');
+                    clearInterval(task.pollTimer);
+                    task.status = 'failed';
+                    task.error = error.message;
+                    runningTaskCount--;
+                    updateTaskUI(task);
+                    processTaskQueue(); // 尝试处理下一个任务
                     console.error('Poll error:', error);
                 }
             };
 
             // 立即执行一次，然后定期轮询
-            await poll();
-            pollInterval = setInterval(poll, 5000); // 每5秒轮询一次
+            poll();
+            task.pollTimer = setInterval(poll, pollInterval);
         }
 
-        // 更新生成按钮状态
-        function updateGenerateButton(loading, text = '生成中...') {
-            const btn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const loader = document.getElementById('btnLoader');
+        // 显示任务结果
+        function displayTaskResult(task) {
+            const resultArea = document.getElementById('resultArea');
+            const resultImage = document.getElementById('resultImage');
+            const downloadLink = document.getElementById('downloadLink');
+            const jsonResult = document.getElementById('jsonResult');
 
-            if (loading) {
-                btn.disabled = true;
-                btnText.textContent = text;
-                loader.classList.remove('hidden');
+            resultArea.classList.remove('hidden');
+
+            if (task.result && task.result.data && task.result.data[0] && task.result.data[0].url) {
+                resultImage.src = task.result.data[0].url;
+                downloadLink.href = task.result.data[0].url;
+                downloadLink.download = `generated-${Date.now()}.png`;
+                if (jsonResult) jsonResult.classList.add('hidden');
             } else {
-                btn.disabled = false;
-                btnText.textContent = '生成图像';
-                loader.classList.add('hidden');
+                showMessage('返回数据格式异常', 'error');
+                if (jsonResult) {
+                    jsonResult.textContent = JSON.stringify(task.result, null, 2);
+                    jsonResult.classList.remove('hidden');
+                }
+            }
+
+            resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 保存任务结果到历史记录
+        async function saveTaskResultToHistory(task) {
+            try {
+                let imageData = null;
+
+                if (task.result && task.result.data && task.result.data[0] && task.result.data[0].url) {
+                    try {
+                        const response = await fetch(task.result.data[0].url);
+                        const blob = await response.blob();
+                        imageData = await blobToBase64(blob);
+                    } catch (e) {
+                        console.error('Failed to fetch image from URL:', e);
+                        imageData = task.result.data[0].url;
+                    }
+                }
+
+                if (imageData) {
+                    await addHistoryItem(imageData, task.prompt);
+                    await loadHistory();
+                }
+            } catch (error) {
+                console.error('Failed to save to history:', error);
             }
         }
 
-        // 图像生成
+        // 当前选中的任务ID
+        let selectedTaskId = null;
+
+        // 更新任务UI
+        function updateTaskUI(changedTask) {
+            const taskContainer = document.getElementById('taskContainer');
+            const taskCountEl = document.getElementById('taskCount');
+            const btnText = document.getElementById('btnText');
+            const loader = document.getElementById('btnLoader');
+            
+            const pendingCount = taskQueue.filter(t => t.status === 'pending').length;
+            const runningCount = taskQueue.filter(t => t.status === 'submitting' || t.status === 'polling').length;
+            const completedCount = taskQueue.filter(t => t.status === 'completed').length;
+            const failedCount = taskQueue.filter(t => t.status === 'failed').length;
+            
+            // 更新按钮状态
+            if (runningCount > 0) {
+                btnText.textContent = '生成中...';
+                loader.classList.remove('hidden');
+            } else if (pendingCount > 0) {
+                btnText.textContent = '等待中...';
+                loader.classList.remove('hidden');
+            } else {
+                btnText.textContent = '生成图像';
+                loader.classList.add('hidden');
+            }
+            
+            // 更新任务数量
+            taskCountEl.textContent = taskQueue.length;
+            
+            // 渲染任务列表
+            if (taskQueue.length === 0) {
+                taskContainer.innerHTML = `
+                    <div class="text-center py-8 text-sm" style="color: var(--text-muted);">
+                        暂无任务
+                    </div>
+                `;
+            } else {
+                taskContainer.innerHTML = taskQueue.slice().reverse().map(task => {
+                    const isSelected = task.id === selectedTaskId;
+                    const progress = parseInt(task.progress) || 0;
+                    const statusText = {
+                        'pending': '等待中',
+                        'submitting': '提交中',
+                        'polling': '生成中',
+                        'completed': '已完成',
+                        'failed': '失败'
+                    }[task.status] || task.status;
+                    
+                    return `
+                        <div class="task-item ${task.status} ${isSelected ? 'selected' : ''}" 
+                             onclick="selectTask('${task.id}')">
+                            <div class="task-header">
+                                <span class="task-id">${task.id.slice(-8)}</span>
+                                <span class="task-status ${task.status}">${statusText}</span>
+                            </div>
+                            <div class="task-prompt" title="${escapeHtml(task.prompt)}">${escapeHtml(task.prompt)}</div>
+                            ${task.status === 'polling' || task.status === 'submitting' ? `
+                                <div class="task-progress-bar">
+                                    <div class="task-progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                                <div class="task-progress-text">${progress}%</div>
+                            ` : ''}
+                            ${task.status === 'failed' ? `
+                                <div class="task-progress-text" style="color: #ef4444;">${escapeHtml(task.error || '未知错误')}</div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // 如果有选中的任务，显示调试信息
+            if (selectedTaskId) {
+                renderTaskDebugPanel();
+            }
+            
+            // 如果有状态变化，显示消息
+            if (changedTask) {
+                if (changedTask.status === 'completed') {
+                    showMessage(`任务 ${changedTask.id.slice(-4)} 完成`, 'success');
+                } else if (changedTask.status === 'failed') {
+                    showMessage(`任务 ${changedTask.id.slice(-4)} 失败: ${changedTask.error}`, 'error');
+                }
+            }
+        }
+
+        // 选择任务
+        function selectTask(taskId) {
+            selectedTaskId = taskId;
+            updateTaskUI();
+        }
+
+        // 渲染任务调试面板
+        function renderTaskDebugPanel() {
+            const task = taskQueue.find(t => t.id === selectedTaskId);
+            if (!task) return;
+            
+            const debugInfo = {
+                id: task.id,
+                serverTaskId: task.serverTaskId,
+                status: task.status,
+                progress: task.progress,
+                prompt: task.prompt,
+                model: task.model,
+                aspectRatio: task.aspectRatio,
+                resolution: task.resolution,
+                imageCount: task.images.length,
+                error: task.error,
+                pollAttempts: task.pollAttempts,
+                startTime: new Date(task.startTime).toLocaleString(),
+                result: task.result ? '已返回数据' : null
+            };
+            
+            // 检查是否已存在调试面板
+            let debugPanel = document.getElementById('taskDebugPanel');
+            if (!debugPanel) {
+                debugPanel = document.createElement('div');
+                debugPanel.id = 'taskDebugPanel';
+                debugPanel.className = 'task-debug-panel';
+                document.getElementById('taskContainer').parentNode.appendChild(debugPanel);
+            }
+            
+            debugPanel.innerHTML = `
+                <div class="task-debug-header">
+                    <span>任务调试信息</span>
+                    <button onclick="closeTaskDebugPanel()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">✕</button>
+                </div>
+                <div class="task-debug-content">${JSON.stringify(debugInfo, null, 2)}</div>
+            `;
+        }
+
+        // 关闭任务调试面板
+        function closeTaskDebugPanel() {
+            selectedTaskId = null;
+            const debugPanel = document.getElementById('taskDebugPanel');
+            if (debugPanel) {
+                debugPanel.remove();
+            }
+            updateTaskUI();
+        }
+
+        // 清理所有任务
+        function clearAllTasks() {
+            if (taskQueue.length === 0) return;
+            
+            // 停止所有轮询定时器
+            taskQueue.forEach(task => {
+                if (task.pollTimer) {
+                    clearInterval(task.pollTimer);
+                }
+            });
+            
+            taskQueue = [];
+            runningTaskCount = 0;
+            selectedTaskId = null;
+            
+            const debugPanel = document.getElementById('taskDebugPanel');
+            if (debugPanel) {
+                debugPanel.remove();
+            }
+            
+            updateTaskUI();
+            showMessage('任务列表已清理', 'success');
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 图像生成 - 使用任务队列
         async function generateImage() {
             const baseUrl = document.getElementById('baseUrl').value.trim();
             const apiKey = document.getElementById('apiKey').value.trim();
@@ -2261,9 +2770,6 @@
             const prompt = getParsedPromptText();
             const aspectRatio = document.getElementById('aspectRatio').value;
             const resolution = document.getElementById('resolution').value;
-            const responseFormat = document.querySelector('input[name="responseFormat"]:checked').value;
-            const requestMode = document.querySelector('input[name="requestMode"]:checked').value;
-            const isAsync = requestMode === 'async';
 
             if (!baseUrl || !apiKey) {
                 showMessage('请填写 API Base URL 和 API Key', 'error');
@@ -2276,110 +2782,15 @@
 
             const validImages = imageFiles.filter(f => f !== null);
 
-            // 如果正在生成中，则不允许重复提交
-            if (isGenerating) {
-                showMessage('正在生成中，请稍候...', 'error');
-                return;
-            }
-
-            isGenerating = true;
-            updateGenerateButton(true, isAsync ? '提交任务...' : '生成中...');
             hideMessage();
 
-            try {
-                let currentImages = [...validImages];
-
-                // 如果没有输入参考图，则自动生成一张透明空图
-                if (currentImages.length === 0) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 1024;
-                    canvas.height = 1024;
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                    const blankImageFile = new File([blob], 'blank.png', { type: 'image/png' });
-                    currentImages.push(blankImageFile);
-                }
-
-                const formData = new FormData();
-                formData.append('model', model);
-                formData.append('prompt', prompt);
-                formData.append('response_format', responseFormat);
-                if (aspectRatio) formData.append('aspect_ratio', aspectRatio);
-                if (resolution) formData.append('image_size', resolution);
-
-                currentImages.forEach(file => formData.append('image', file));
-
-                // 构建URL，异步模式添加 query 参数
-                let url = `${baseUrl}/images/edits`;
-                if (isAsync) {
-                    url += '?async=true';
-                }
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                if (isAsync) {
-                    // 异步模式：获取 task_id 并开始轮询
-                    const taskId = data.data?.task_id || data.task_id;
-                    if (!taskId) {
-                        throw new Error('未能获取任务ID');
-                    }
-                    showMessage(`任务已提交，正在轮询状态... (任务ID: ${taskId.substring(0, 8)}...)`, 'success');
-                    await pollTaskStatus(baseUrl, apiKey, taskId, responseFormat, prompt);
-                } else {
-                    // 同步模式：直接显示结果
-                    displayResult(data, responseFormat);
-                    await saveResultToHistory(data, responseFormat, prompt);
-                    showMessage('图像生成成功！', 'success');
-                    isGenerating = false;
-                    updateGenerateButton(false);
-                }
-
-            } catch (error) {
-                console.error('Generation error:', error);
-                showMessage(`生成失败: ${error.message}`, 'error');
-                isGenerating = false;
-                updateGenerateButton(false);
-            }
-        }
-
-        async function saveResultToHistory(data, format, prompt) {
-            try {
-                let imageData = null;
-
-                if (format === 'b64_json' && data.data && data.data[0] && data.data[0].b64_json) {
-                    imageData = `data:image/png;base64,${data.data[0].b64_json}`;
-                } else if (data.data && data.data[0] && data.data[0].url) {
-                    try {
-                        const response = await fetch(data.data[0].url);
-                        const blob = await response.blob();
-                        imageData = await blobToBase64(blob);
-                    } catch (e) {
-                        console.error('Failed to fetch image from URL:', e);
-                        imageData = data.data[0].url;
-                    }
-                }
-
-                if (imageData) {
-                    await addHistoryItem(imageData, prompt);
-                    await loadHistory();
-                }
-            } catch (error) {
-                console.error('Failed to save to history:', error);
-            }
+            // 创建新任务并加入队列
+            const taskId = createTask(baseUrl, apiKey, model, prompt, aspectRatio, resolution, validImages);
+            
+            showMessage('任务已添加到队列', 'success');
+            
+            // 更新按钮状态
+            updateTaskUI({ status: 'pending' });
         }
 
         function blobToBase64(blob) {
@@ -2389,40 +2800,6 @@
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
-        }
-
-        function displayResult(data, format) {
-            const resultArea = document.getElementById('resultArea');
-            const resultImage = document.getElementById('resultImage');
-            const downloadLink = document.getElementById('downloadLink');
-            const jsonResult = document.getElementById('jsonResult');
-
-            resultArea.classList.remove('hidden');
-
-            if (format === 'b64_json' && data.data && data.data[0] && data.data[0].b64_json) {
-                const base64 = data.data[0].b64_json;
-                const dataUrl = `data:image/png;base64,${base64}`;
-                resultImage.src = dataUrl;
-                downloadLink.href = dataUrl;
-                downloadLink.download = `generated-${Date.now()}.png`;
-                if (jsonResult) {
-                    jsonResult.textContent = JSON.stringify(data, null, 2);
-                    jsonResult.classList.remove('hidden');
-                }
-            } else if (data.data && data.data[0] && data.data[0].url) {
-                resultImage.src = data.data[0].url;
-                downloadLink.href = data.data[0].url;
-                downloadLink.download = `generated-${Date.now()}.png`;
-                if (jsonResult) jsonResult.classList.add('hidden');
-            } else {
-                showMessage('返回数据格式异常', 'error');
-                if (jsonResult) {
-                    jsonResult.textContent = JSON.stringify(data, null, 2);
-                    jsonResult.classList.remove('hidden');
-                }
-            }
-
-            resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function showMessage(msg, type) {
