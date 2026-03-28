@@ -1540,6 +1540,35 @@
             }
         }
 
+        // 辅助函数：将【imageX】格式的文本转换回 mention chip HTML
+        function parsePromptWithMentions(promptText) {
+            if (!promptText) return '';
+            
+            // 使用正则表达式匹配【image数字】格式
+            const mentionRegex = /【image(\d+)】/g;
+            let result = '';
+            let lastIndex = 0;
+            let match;
+            
+            while ((match = mentionRegex.exec(promptText)) !== null) {
+                // 添加匹配前的文本
+                result += escapeHtml(promptText.slice(lastIndex, match.index));
+                
+                const imgIndex = parseInt(match[1]) - 1; // 转换为 0-based 索引
+                const chipInner = `@img${match[1]} <svg style="width:12px;height:12px;margin-left:2px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+                
+                // 创建 chip HTML
+                result += `<span class="mention-chip" contenteditable="false" data-index="${imgIndex}" onclick="editExistingMention(event, this)">${chipInner}</span>&nbsp;`;
+                
+                lastIndex = match.index + match[0].length;
+            }
+            
+            // 添加剩余文本
+            result += escapeHtml(promptText.slice(lastIndex));
+            
+            return result;
+        }
+
         // ==================== 复用提示词功能 ====================
         async function reusePrompt(id) {
             try {
@@ -1565,10 +1594,10 @@
                     }
                 }
 
-                // 1. 恢复提示词
+                // 1. 恢复提示词（将【imageX】格式转换为 mention chip）
                 if (item.prompt) {
                     const promptEditor = document.getElementById('prompt');
-                    promptEditor.innerHTML = item.prompt;
+                    promptEditor.innerHTML = parsePromptWithMentions(item.prompt);
                 }
 
                 // 2. 恢复参考图片
