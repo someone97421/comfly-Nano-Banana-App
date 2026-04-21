@@ -5,7 +5,7 @@
     <link rel="icon" href="favicon.png" type="image/png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nano-Banana AI 图像生成器</title>
+    <title>Comfly AI 图像生成器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -198,6 +198,42 @@
             content: attr(data-placeholder);
             color: var(--text-muted);
             pointer-events: none;
+        }
+
+        .model-tabs {
+            display: inline-flex;
+            gap: 8px;
+            padding: 4px;
+            border-radius: 9999px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+        }
+
+        .model-tab {
+            border: none;
+            border-radius: 9999px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .model-tab:hover {
+            color: var(--text-primary);
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        .model-tab.active {
+            color: white;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            box-shadow: 0 8px 18px -10px rgba(59, 130, 246, 0.75);
+        }
+
+        .hidden-param {
+            display: none;
         }
 
         /* 交互式引用标签 (Chip) */
@@ -995,10 +1031,8 @@
         <div class="text-center space-y-2 mb-6">
             <h1
                 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Nano-Banana AI 图像生成器
+                Comfly AI 图像生成器
             </h1>
-            <p class="text-slate-400 text-sm" style="color: var(--text-secondary);">支持 Gemini / Nano-banana-2 多图参考生成 |
-                输入 @ 引用图像</p>
         </div>
 
         <!-- 第一排：设置区（可关闭抽屉） -->
@@ -1109,7 +1143,7 @@
                                 <input type="file" id="configFile" accept=".json" onchange="importConfig(event)">
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-2">
                                 <label class="text-sm font-medium" style="color: var(--text-secondary);">API Base
                                     URL</label>
@@ -1119,11 +1153,6 @@
                             <div class="space-y-2">
                                 <label class="text-sm font-medium" style="color: var(--text-secondary);">API Key</label>
                                 <input type="password" id="apiKey"
-                                    class="w-full px-4 py-2 rounded-lg text-sm form-input">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium" style="color: var(--text-secondary);">模型名称</label>
-                                <input type="text" id="modelName" value="gemini-3.1-flash-image-preview"
                                     class="w-full px-4 py-2 rounded-lg text-sm form-input">
                             </div>
                         </div>
@@ -1242,17 +1271,23 @@
 
             <!-- 右侧：提示词输入区 -->
             <div class="glass-panel rounded-2xl p-5">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        提示词
-                    </h2>
-                    <span class="text-xs px-2 py-1 rounded"
-                        style="background: var(--bg-input); color: var(--text-muted);">输入 @ 引用图片</span>
+                <div class="flex flex-col gap-4 mb-4">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            提示词与参数
+                        </h2>
+                        <div class="model-tabs" role="tablist" aria-label="模型切换">
+                            <button type="button" id="tab-gemini" class="model-tab active" role="tab"
+                                aria-selected="true" onclick="setActiveProvider('gemini')">Gemini 3.1</button>
+                            <button type="button" id="tab-gpt-image-2" class="model-tab" role="tab"
+                                aria-selected="false" onclick="setActiveProvider('gpt-image-2')">GPT Image 2</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="textarea-wrapper">
@@ -1275,36 +1310,15 @@
                     </div>
                 </div>
 
-                <!-- 生图参数：宽高比和分辨率 -->
+                <!-- 生图参数：按模型切换 -->
                 <div class="grid grid-cols-2 gap-3 mt-4">
                     <div class="space-y-1">
-                        <label class="text-xs font-medium" style="color: var(--text-muted);">宽高比</label>
-                        <select id="aspectRatio" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select">
-                            <option value="">默认 (Default)</option>
-                            <option value="1:1">1:1 (正方形)</option>
-                            <option value="2:3">2:3 (纵向)</option>
-                            <option value="3:2">3:2 (横向)</option>
-                            <option value="3:4">3:4 (纵向)</option>
-                            <option value="4:3">4:3 (横向)</option>
-                            <option value="4:5">4:5 (纵向)</option>
-                            <option value="5:4">5:4 (横向)</option>
-                            <option value="9:16">9:16 (手机竖屏)</option>
-                            <option value="16:9">16:9 (宽屏)</option>
-                            <option value="21:9">21:9 (超宽屏)</option>
-                            <option value="1:4">1:4 (长图/海报)</option>
-                            <option value="4:1">4:1 (Banner)</option>
-                            <option value="1:8">1:8 (极长图)</option>
-                            <option value="8:1">8:1 (极宽图)</option>
-                        </select>
+                        <label class="text-xs font-medium" style="color: var(--text-muted);" id="aspectRatioLabel">宽高比</label>
+                        <select id="aspectRatio" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select"></select>
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-medium" style="color: var(--text-muted);">分辨率</label>
-                        <select id="resolution" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select">
-                            <option value="">默认 (Auto)</option>
-                            <option value="1K">1K </option>
-                            <option value="2K">2K </option>
-                            <option value="4K">4K </option>
-                        </select>
+                    <div class="space-y-1" id="secondaryParamGroup">
+                        <label class="text-xs font-medium" style="color: var(--text-muted);" id="secondaryParamLabel">分辨率</label>
+                        <select id="resolution" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select"></select>
                     </div>
                 </div>
 
@@ -1609,6 +1623,69 @@
         let savedRange = null;
         let isSettingsDrawerOpen = false;
         let currentTheme = 'dark';
+        let activeProvider = 'gemini';
+
+        const MODEL_PROFILES = {
+            gemini: {
+                id: 'gemini',
+                tabId: 'tab-gemini',
+                label: 'Gemini 3.1',
+                model: 'gemini-3.1-flash-image-preview',
+                requestType: 'multipart',
+                aspectRatioLabel: '宽高比',
+                aspectRatioOptions: [
+                    { value: '', label: '默认 (Default)' },
+                    { value: '1:1', label: '1:1 (正方形)' },
+                    { value: '2:3', label: '2:3 (纵向)' },
+                    { value: '3:2', label: '3:2 (横向)' },
+                    { value: '3:4', label: '3:4 (纵向)' },
+                    { value: '4:3', label: '4:3 (横向)' },
+                    { value: '4:5', label: '4:5 (纵向)' },
+                    { value: '5:4', label: '5:4 (横向)' },
+                    { value: '9:16', label: '9:16 (手机竖屏)' },
+                    { value: '16:9', label: '16:9 (宽屏)' },
+                    { value: '21:9', label: '21:9 (超宽屏)' },
+                    { value: '1:4', label: '1:4 (长图/海报)' },
+                    { value: '4:1', label: '4:1 (Banner)' },
+                    { value: '1:8', label: '1:8 (极长图)' },
+                    { value: '8:1', label: '8:1 (极宽图)' }
+                ],
+                secondaryParamKey: 'resolution',
+                secondaryParamLabel: '分辨率',
+                secondaryOptions: [
+                    { value: '', label: '默认 (Auto)' },
+                    { value: '1K', label: '1K' },
+                    { value: '2K', label: '2K' },
+                    { value: '4K', label: '4K' }
+                ],
+                showSecondaryParam: true,
+                promptPlaceholder: '描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中'
+            },
+            'gpt-image-2': {
+                id: 'gpt-image-2',
+                tabId: 'tab-gpt-image-2',
+                label: 'GPT Image 2',
+                model: 'gpt-image-2',
+                requestType: 'json',
+                aspectRatioLabel: '宽高比',
+                aspectRatioOptions: [
+                    { value: '', label: '默认 (Auto)' },
+                    { value: '1:1', label: '1:1 (正方形)' },
+                    { value: '3:2', label: '3:2 (横向)' },
+                    { value: '2:3', label: '2:3 (纵向)' }
+                ],
+                secondaryParamKey: 'size',
+                secondaryParamLabel: '尺寸',
+                secondaryOptions: [
+                    { value: '', label: '默认 (Auto)' },
+                    { value: '1024x1024', label: '1024x1024' },
+                    { value: '1536x1024', label: '1536x1024' },
+                    { value: '1024x1536', label: '1024x1536' }
+                ],
+                showSecondaryParam: false,
+                promptPlaceholder: '描述你想要生成的图像内容... 例如：参考 @img1 的主体和 @img2 的配色，生成一张新图'
+            }
+        };
         
         // 任务队列管理
         let taskQueue = []; // 等待执行的任务
@@ -1632,6 +1709,87 @@
                 loadHistory();
             });
         });
+
+        function getActiveProfile() {
+            return MODEL_PROFILES[activeProvider] || MODEL_PROFILES.gemini;
+        }
+
+        function getProviderSettings(providerId) {
+            const profile = MODEL_PROFILES[providerId] || MODEL_PROFILES.gemini;
+            const config = {
+                aspectRatio: '',
+                resolution: ''
+            };
+
+            if (profile.secondaryParamKey === 'size') {
+                config.size = '';
+            } else {
+                config.resolution = '';
+            }
+
+            return config;
+        }
+
+        function buildSelectOptions(selectEl, options, selectedValue = '') {
+            if (!selectEl) return;
+            selectEl.innerHTML = options.map(option =>
+                `<option value="${option.value}">${option.label}</option>`
+            ).join('');
+            selectEl.value = selectedValue;
+            if (selectEl.value !== selectedValue) {
+                selectEl.value = options[0]?.value || '';
+            }
+        }
+
+        function collectProviderSettings() {
+            return {
+                aspectRatio: document.getElementById('aspectRatio').value,
+                [getActiveProfile().secondaryParamKey]: document.getElementById('resolution').value
+            };
+        }
+
+        function applyProviderSettings(providerId, settings = {}) {
+            const profile = MODEL_PROFILES[providerId] || MODEL_PROFILES.gemini;
+            const normalized = {
+                aspectRatio: settings.aspectRatio || '',
+                [profile.secondaryParamKey]: settings[profile.secondaryParamKey] || ''
+            };
+
+            document.getElementById('aspectRatioLabel').textContent = profile.aspectRatioLabel;
+            document.getElementById('secondaryParamLabel').textContent = profile.secondaryParamLabel;
+
+            buildSelectOptions(document.getElementById('aspectRatio'), profile.aspectRatioOptions, normalized.aspectRatio);
+            buildSelectOptions(document.getElementById('resolution'), profile.secondaryOptions, normalized[profile.secondaryParamKey]);
+            document.getElementById('secondaryParamGroup').classList.toggle('hidden-param', !profile.showSecondaryParam);
+
+            const promptEditor = document.getElementById('prompt');
+            if (promptEditor) {
+                promptEditor.dataset.placeholder = profile.promptPlaceholder;
+            }
+
+            Object.values(MODEL_PROFILES).forEach(item => {
+                const button = document.getElementById(item.tabId);
+                if (!button) return;
+                const isActive = item.id === providerId;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+        }
+
+        function setActiveProvider(providerId, options = {}) {
+            if (!MODEL_PROFILES[providerId]) return;
+
+            const shouldPreserveCurrent = options.preserveCurrent !== false;
+            const providerSettings = options.providerSettings || {};
+
+            if (shouldPreserveCurrent && MODEL_PROFILES[activeProvider]) {
+                providerSettings[activeProvider] = collectProviderSettings();
+            }
+
+            activeProvider = providerId;
+            const nextSettings = providerSettings[providerId] || getProviderSettings(providerId);
+            applyProviderSettings(providerId, nextSettings);
+        }
 
         // ==================== 主题管理 ====================
         function initTheme() {
@@ -2749,13 +2907,18 @@
         }
 
         // API 配置管理
-        function saveConfig() {
-            const config = {
+        function buildConfigPayload() {
+            const providerSettings = {
+                gemini: getProviderSettings('gemini'),
+                'gpt-image-2': getProviderSettings('gpt-image-2')
+            };
+            providerSettings[activeProvider] = collectProviderSettings();
+
+            return {
                 baseUrl: document.getElementById('baseUrl').value,
                 apiKey: document.getElementById('apiKey').value,
-                modelName: document.getElementById('modelName').value,
-                aspectRatio: document.getElementById('aspectRatio').value,
-                resolution: document.getElementById('resolution').value,
+                activeProvider,
+                providerSettings,
                 historyLimit: document.getElementById('historyLimit').value,
                 enableCompression: document.getElementById('enableCompression').checked,
                 maxEdgeLength: document.getElementById('maxEdgeLength').value,
@@ -2764,51 +2927,61 @@
                 pollInterval: document.getElementById('pollInterval').value,
                 timestamp: new Date().toISOString()
             };
+        }
+
+        function saveConfig() {
+            const config = buildConfigPayload();
             localStorage.setItem('nanoBananaConfig', JSON.stringify(config));
             showMessage('配置已保存到本地存储', 'success');
         }
 
         function loadSavedConfig() {
             const saved = localStorage.getItem('nanoBananaConfig');
+            let config = null;
+
             if (saved) {
                 try {
-                    const config = JSON.parse(saved);
-                    document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
-                    document.getElementById('apiKey').value = config.apiKey || '';
-                    document.getElementById('modelName').value = config.modelName || 'gemini-3.1-flash-image-preview';
-                    if (config.aspectRatio !== undefined) {
-                        document.getElementById('aspectRatio').value = config.aspectRatio;
-                    }
-                    if (config.resolution !== undefined) {
-                        document.getElementById('resolution').value = config.resolution;
-                    }
-                    document.getElementById('historyLimit').value = config.historyLimit || '20';
-                    document.getElementById('enableCompression').checked = config.enableCompression !== false;
-                    document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
-                    document.getElementById('jpegQuality').value = config.jpegQuality || '0.9';
-                    document.getElementById('maxConcurrency').value = config.maxConcurrency || '3';
-                    document.getElementById('pollInterval').value = config.pollInterval || '5';
+                    config = JSON.parse(saved);
                 } catch (e) {
                     console.error('Failed to load config:', e);
                 }
             }
+
+            document.getElementById('baseUrl').value = config?.baseUrl || 'https://ai.comfly.chat/v1';
+            document.getElementById('apiKey').value = config?.apiKey || '';
+            document.getElementById('historyLimit').value = config?.historyLimit || '20';
+            document.getElementById('enableCompression').checked = config?.enableCompression !== false;
+            document.getElementById('maxEdgeLength').value = config?.maxEdgeLength || '2560';
+            document.getElementById('jpegQuality').value = config?.jpegQuality || '0.9';
+            document.getElementById('maxConcurrency').value = config?.maxConcurrency || '3';
+            document.getElementById('pollInterval').value = config?.pollInterval || '5';
+
+            const providerSettings = {
+                gemini: {
+                    ...getProviderSettings('gemini'),
+                    ...(config?.providerSettings?.gemini || {})
+                },
+                'gpt-image-2': {
+                    ...getProviderSettings('gpt-image-2'),
+                    ...(config?.providerSettings?.['gpt-image-2'] || {})
+                }
+            };
+
+            if (!config?.providerSettings && config?.aspectRatio !== undefined) {
+                providerSettings.gemini.aspectRatio = config.aspectRatio || '';
+            }
+            if (!config?.providerSettings && config?.resolution !== undefined) {
+                providerSettings.gemini.resolution = config.resolution || '';
+            }
+
+            setActiveProvider(config?.activeProvider || 'gemini', {
+                preserveCurrent: false,
+                providerSettings
+            });
         }
 
         function exportConfig() {
-            const config = {
-                baseUrl: document.getElementById('baseUrl').value,
-                apiKey: document.getElementById('apiKey').value,
-                modelName: document.getElementById('modelName').value,
-                aspectRatio: document.getElementById('aspectRatio').value,
-                resolution: document.getElementById('resolution').value,
-                historyLimit: document.getElementById('historyLimit').value,
-                enableCompression: document.getElementById('enableCompression').checked,
-                maxEdgeLength: document.getElementById('maxEdgeLength').value,
-                jpegQuality: document.getElementById('jpegQuality').value,
-                maxConcurrency: document.getElementById('maxConcurrency').value,
-                pollInterval: document.getElementById('pollInterval').value,
-                timestamp: new Date().toISOString()
-            };
+            const config = buildConfigPayload();
             const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2827,21 +3000,8 @@
             reader.onload = (e) => {
                 try {
                     const config = JSON.parse(e.target.result);
-                    document.getElementById('baseUrl').value = config.baseUrl || 'https://ai.comfly.chat/v1';
-                    document.getElementById('apiKey').value = config.apiKey || '';
-                    document.getElementById('modelName').value = config.modelName || 'gemini-3.1-flash-image-preview';
-                    if (config.aspectRatio !== undefined) {
-                        document.getElementById('aspectRatio').value = config.aspectRatio;
-                    }
-                    if (config.resolution !== undefined) {
-                        document.getElementById('resolution').value = config.resolution;
-                    }
-                    document.getElementById('historyLimit').value = config.historyLimit || '20';
-                    document.getElementById('enableCompression').checked = config.enableCompression !== false;
-                    document.getElementById('maxEdgeLength').value = config.maxEdgeLength || '2560';
-                    document.getElementById('jpegQuality').value = config.jpegQuality || '0.9';
-                    document.getElementById('maxConcurrency').value = config.maxConcurrency || '3';
-                    document.getElementById('pollInterval').value = config.pollInterval || '5';
+                    localStorage.setItem('nanoBananaConfig', JSON.stringify(config));
+                    loadSavedConfig();
                     saveConfig();
                     showMessage('配置已导入并保存', 'success');
                 } catch (err) {
@@ -2855,18 +3015,19 @@
         // ==================== 任务队列管理 ====================
         
         // 创建新任务
-        function createTask(baseUrl, apiKey, model, prompt, aspectRatio, resolution, validImages) {
+        function createTask(baseUrl, apiKey, providerId, prompt, params, validImages) {
             taskIdCounter++;
             const localTaskId = `local-${Date.now()}-${taskIdCounter}`;
+            const profile = MODEL_PROFILES[providerId] || MODEL_PROFILES.gemini;
             
             const task = {
                 id: localTaskId,
                 baseUrl,
                 apiKey,
-                model,
+                providerId,
+                model: profile.model,
                 prompt,
-                aspectRatio,
-                resolution,
+                params,
                 images: validImages,
                 status: 'pending', // pending, submitting, polling, completed, failed
                 serverTaskId: null,
@@ -2916,33 +3077,18 @@
 
         // 执行单个任务
         async function executeTask(task) {
+            const profile = MODEL_PROFILES[task.providerId] || MODEL_PROFILES.gemini;
             let currentImages = [...task.images];
 
-            // 如果没有输入参考图，则自动生成一张空白JPG图像
-            if (currentImages.length === 0) {
+            // Gemini 的 edits 接口要求始终携带 image，未上传时补一张空白图
+            if (profile.requestType === 'multipart' && currentImages.length === 0) {
                 const blankImageFile = await createBlankJpgImage();
                 currentImages.push(blankImageFile);
             }
 
-            const formData = new FormData();
-            formData.append('model', task.model);
-            formData.append('prompt', task.prompt);
-            formData.append('response_format', 'url'); // 默认URL格式
-            if (task.aspectRatio) formData.append('aspect_ratio', task.aspectRatio);
-            if (task.resolution) formData.append('image_size', task.resolution);
-
-            currentImages.forEach(file => formData.append('image', file));
-
-            // 异步模式添加 query 参数
-            const url = `${task.baseUrl}/images/edits?async=true`;
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${task.apiKey}`
-                },
-                body: formData
-            });
+            const response = profile.requestType === 'multipart'
+                ? await submitGeminiTask(task, currentImages)
+                : await submitGptImageTask(task, currentImages);
 
             const data = await response.json();
 
@@ -2951,7 +3097,7 @@
             }
 
             // 获取服务端任务ID并开始轮询
-            const serverTaskId = data.data?.task_id || data.task_id;
+            const serverTaskId = data.data?.task_id || data.task_id || data.data;
             if (!serverTaskId) {
                 throw new Error('未能获取任务ID');
             }
@@ -2962,6 +3108,51 @@
 
             // 开始轮询
             startPolling(task);
+        }
+
+        async function submitGeminiTask(task, currentImages) {
+            const formData = new FormData();
+            formData.append('model', task.model);
+            formData.append('prompt', task.prompt);
+            formData.append('response_format', 'url');
+            if (task.params?.aspectRatio) formData.append('aspect_ratio', task.params.aspectRatio);
+            if (task.params?.resolution) formData.append('image_size', task.params.resolution);
+
+            currentImages.forEach(file => formData.append('image', file));
+
+            return fetch(`${task.baseUrl}/images/edits?async=true`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${task.apiKey}`
+                },
+                body: formData
+            });
+        }
+
+        async function submitGptImageTask(task, currentImages) {
+            const payload = {
+                model: task.model,
+                prompt: task.prompt
+            };
+
+            if (task.params?.aspectRatio) {
+                payload.aspect_ratio = task.params.aspectRatio;
+            }
+            if (task.params?.size) {
+                payload.size = task.params.size;
+            }
+            if (currentImages.length > 0) {
+                payload.image = await Promise.all(currentImages.map(file => blobToBase64(file)));
+            }
+
+            return fetch(`${task.baseUrl}/images/generations?async=true`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${task.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
         }
 
         // 创建空白JPG图像
@@ -3065,12 +3256,13 @@
             const resultImage = document.getElementById('resultImage');
             const downloadLink = document.getElementById('downloadLink');
             const jsonResult = document.getElementById('jsonResult');
+            const imageSrc = extractImageSource(task.result);
 
             resultArea.classList.remove('hidden');
 
-            if (task.result && task.result.data && task.result.data[0] && task.result.data[0].url) {
-                resultImage.src = task.result.data[0].url;
-                downloadLink.href = task.result.data[0].url;
+            if (imageSrc) {
+                resultImage.src = imageSrc;
+                downloadLink.href = imageSrc;
                 downloadLink.download = `generated-${Date.now()}.png`;
                 if (jsonResult) jsonResult.classList.add('hidden');
             } else {
@@ -3087,16 +3279,17 @@
         // 保存任务结果到历史记录
         async function saveTaskResultToHistory(task) {
             try {
+                const imageSrc = extractImageSource(task.result);
                 let imageData = null;
 
-                if (task.result && task.result.data && task.result.data[0] && task.result.data[0].url) {
+                if (imageSrc) {
                     try {
-                        const response = await fetch(task.result.data[0].url);
+                        const response = await fetch(imageSrc);
                         const blob = await response.blob();
                         imageData = await blobToBase64(blob);
                     } catch (e) {
                         console.error('Failed to fetch image from URL:', e);
-                        imageData = task.result.data[0].url;
+                        imageData = imageSrc;
                     }
                 }
 
@@ -3165,6 +3358,7 @@
                                 <span class="task-id">${task.id.slice(-8)}</span>
                                 <span class="task-status ${task.status}">${statusText}</span>
                             </div>
+                            <div class="task-progress-text" style="margin-bottom: 6px;">${escapeHtml(MODEL_PROFILES[task.providerId]?.label || task.model)}</div>
                             <div class="task-prompt" title="${escapeHtml(task.prompt)}">${escapeHtml(task.prompt)}</div>
                             ${task.status === 'polling' || task.status === 'submitting' ? `
                                 <div class="task-progress-bar">
@@ -3209,12 +3403,12 @@
             const debugInfo = {
                 id: task.id,
                 serverTaskId: task.serverTaskId,
+                providerId: task.providerId,
                 status: task.status,
                 progress: task.progress,
                 prompt: task.prompt,
                 model: task.model,
-                aspectRatio: task.aspectRatio,
-                resolution: task.resolution,
+                params: task.params,
                 imageCount: task.images.length,
                 error: task.error,
                 pollAttempts: task.pollAttempts,
@@ -3286,10 +3480,8 @@
         async function generateImage() {
             const baseUrl = document.getElementById('baseUrl').value.trim();
             const apiKey = document.getElementById('apiKey').value.trim();
-            const model = document.getElementById('modelName').value.trim();
             const prompt = getParsedPromptText();
-            const aspectRatio = document.getElementById('aspectRatio').value;
-            const resolution = document.getElementById('resolution').value;
+            const params = collectProviderSettings();
 
             if (!baseUrl || !apiKey) {
                 showMessage('请填写 API Base URL 和 API Key', 'error');
@@ -3305,7 +3497,7 @@
             hideMessage();
 
             // 创建新任务并加入队列
-            const taskId = createTask(baseUrl, apiKey, model, prompt, aspectRatio, resolution, validImages);
+            createTask(baseUrl, apiKey, activeProvider, prompt, params, validImages);
             
             showMessage('任务已添加到队列', 'success');
             
@@ -3320,6 +3512,21 @@
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
+        }
+
+        function extractImageSource(result) {
+            const resultItems = Array.isArray(result)
+                ? result
+                : Array.isArray(result?.data)
+                    ? result.data
+                    : Array.isArray(result?.data?.data)
+                        ? result.data.data
+                        : null;
+            const firstItem = resultItems?.[0];
+            if (!firstItem) return null;
+            if (firstItem.url) return firstItem.url;
+            if (firstItem.b64_json) return `data:image/png;base64,${firstItem.b64_json}`;
+            return null;
         }
 
         function showMessage(msg, type) {
