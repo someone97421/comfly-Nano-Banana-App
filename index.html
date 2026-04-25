@@ -185,7 +185,7 @@
         /* 富文本编辑器样式 */
         .prompt-editor {
             min-height: 120px;
-            max-height: 200px;
+            height: 200px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-word;
@@ -193,6 +193,19 @@
             border-color: var(--border-input);
             color: var(--text-primary);
             transition: all 0.3s ease;
+            resize: vertical;
+        }
+
+        .prompt-resize-handle {
+            height: 6px;
+            cursor: ns-resize;
+            background: transparent;
+            transition: background 0.2s;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .prompt-resize-handle:hover {
+            background: var(--accent-blue);
         }
 
         .prompt-editor:empty::before {
@@ -263,7 +276,7 @@
 
         /* 弹出式引用选择面板 */
         .mention-popup {
-            position: absolute;
+            position: fixed;
             width: 220px;
             max-height: 280px;
             background: var(--bg-secondary);
@@ -272,7 +285,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            z-index: 1000;
+            z-index: 10000;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             opacity: 0;
             visibility: hidden;
@@ -1044,10 +1057,167 @@
             height: 100%;
             object-fit: cover;
         }
+
+        /* 浮动任务按钮 */
+        .task-float-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 9996;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .task-float-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 12px 32px rgba(59, 130, 246, 0.55);
+        }
+
+        .task-float-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .task-float-badge:empty {
+            display: none;
+        }
+
+        .task-float-badge.idle {
+            background: var(--accent-green);
+        }
+
+        /* 右侧任务侧边栏 */
+        .task-sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 9996;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .task-sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 380px;
+            max-width: 90vw;
+            height: 100vh;
+            background: var(--bg-primary);
+            border-left: 1px solid var(--border-color);
+            z-index: 9997;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -8px 0 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .task-sidebar.active {
+            transform: translateX(0);
+        }
+
+        .task-sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .task-sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .task-sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 
 <body class="min-h-screen p-4 md:p-6 custom-scrollbar">
+
+    <!-- 浮动任务按钮 -->
+    <button id="taskFloatBtn" class="task-float-btn" onclick="toggleTaskSidebar()" title="任务列表">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+        <span id="taskFloatBadge" class="task-float-badge"></span>
+    </button>
+
+    <!-- 任务侧边栏遮罩 -->
+    <div id="taskSidebarOverlay" class="task-sidebar-overlay" onclick="closeTaskSidebar()"></div>
+
+    <!-- 任务侧边栏 -->
+    <div id="taskSidebar" class="task-sidebar">
+        <div class="task-sidebar-header">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                任务列表
+            </h2>
+            <div class="flex items-center gap-2">
+                <span id="taskSidebarCount" class="text-xs px-2 py-1 rounded" style="background: var(--bg-input); color: var(--text-muted);">0</span>
+                <button onclick="closeTaskSidebar()" class="text-sm px-2 py-1 rounded hover:bg-opacity-50 transition-colors" style="color: var(--text-muted); background: var(--bg-input);">✕</button>
+            </div>
+        </div>
+        <div id="taskSidebarBody" class="task-sidebar-body custom-scrollbar">
+            <div class="text-center py-8 text-sm" style="color: var(--text-muted);">暂无任务</div>
+        </div>
+        <div class="task-sidebar-footer">
+            <span class="text-xs" style="color: var(--text-muted);" id="taskSidebarStatus">就绪</span>
+            <button onclick="clearAllTasks()" class="text-xs transition-colors px-3 py-1.5 rounded" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">清理全部</button>
+        </div>
+    </div>
+
+    <!-- 弹出式引用选择面板 -->
+    <div id="mentionPopup" class="mention-popup">
+        <div class="mention-popup-header">
+            <span>选择图片引用</span>
+            <span class="hint">ESC 关闭</span>
+        </div>
+        <div class="mention-popup-list custom-scrollbar" id="mentionPopupList">
+            <!-- 动态填充 -->
+        </div>
+    </div>
 
     <!-- 图片预览模态框 -->
     <div id="imageModal" class="image-modal" onclick="closeImageModal()">
@@ -1268,7 +1438,12 @@
                                             step="1" class="w-full px-3 py-2 rounded-lg text-sm form-input">
                                     </div>
                                 </div>
-                                <p class="text-xs mt-2" style="color: var(--text-muted);">设置同时处理的最大任务数和轮询间隔</p>
+                                <div class="mt-3">
+                                    <label class="text-xs mb-1 block" style="color: var(--text-muted);">任务列表最大保存数量</label>
+                                    <input type="number" id="taskLimit" value="50" min="5" max="500"
+                                        class="w-full px-3 py-2 rounded-lg text-sm form-input">
+                                </div>
+                                <p class="text-xs mt-2" style="color: var(--text-muted);">设置同时处理的最大任务数、轮询间隔和任务列表保存上限</p>
                             </div>
                         </div>
                     </div>
@@ -1277,9 +1452,9 @@
         </div>
 
         <!-- 第二排：参考图输入区 + 提示词输入区 -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <!-- 左侧：参考图输入区 -->
-            <div class="glass-panel rounded-2xl p-5">
+            <div class="glass-panel rounded-2xl p-5 lg:col-span-1">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold flex items-center gap-2">
                         <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor"
@@ -1303,7 +1478,7 @@
             </div>
 
             <!-- 右侧：提示词输入区 -->
-            <div class="glass-panel rounded-2xl p-5">
+            <div class="glass-panel rounded-2xl p-5 lg:col-span-2">
                 <div class="flex flex-col gap-4 mb-4">
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                         <h2 class="text-lg font-semibold flex items-center gap-2">
@@ -1325,22 +1500,12 @@
 
                 <div class="textarea-wrapper">
                     <div id="prompt"
-                        class="prompt-editor flex-1 px-4 py-3 rounded-lg focus:ring-2 outline-none transition-all text-sm custom-scrollbar pr-12"
+                        class="prompt-editor flex-1 px-4 py-3 rounded-t-lg focus:ring-2 outline-none transition-all text-sm custom-scrollbar pr-12"
                         contenteditable="true" data-placeholder="描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中"></div>
+                    <div class="prompt-resize-handle" id="promptResizeHandle" title="拖拽调节高度"></div>
 
                     <button type="button" onclick="toggleMentionPopup()" class="mention-btn" id="mentionBtn"
                         title="插入图片引用">@</button>
-
-                    <!-- 弹出式引用选择面板 -->
-                    <div id="mentionPopup" class="mention-popup">
-                        <div class="mention-popup-header">
-                            <span>选择图片引用</span>
-                            <span class="hint">ESC 关闭</span>
-                        </div>
-                        <div class="mention-popup-list custom-scrollbar" id="mentionPopupList">
-                            <!-- 动态填充 -->
-                        </div>
-                    </div>
                 </div>
 
                 <!-- 生图参数：按模型切换 -->
@@ -1409,59 +1574,29 @@
                 style="background: var(--bg-input); color: var(--text-muted);"></div>
         </div>
 
-        <!-- 第四排：任务列表 + 历史记录区 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <!-- 左侧：任务列表 -->
-            <div class="glass-panel rounded-2xl p-5 lg:col-span-1">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                        </svg>
-                        任务列表
-                    </h2>
-                    <div class="flex items-center gap-2">
-                        <span id="taskCount" class="text-xs px-2 py-1 rounded"
-                            style="background: var(--bg-input); color: var(--text-muted);">0</span>
-                        <button onclick="clearAllTasks()" class="text-xs transition-colors px-2 py-1 rounded"
-                            style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
-                            清理
-                        </button>
-                    </div>
-                </div>
-                <div id="taskContainer" class="task-list-container custom-scrollbar">
-                    <div class="text-center py-8 text-sm" style="color: var(--text-muted);">
-                        暂无任务
-                    </div>
+        <!-- 第四排：生成历史 -->
+        <div class="glass-panel rounded-2xl p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    生成历史
+                </h2>
+                <div class="flex items-center gap-2">
+                    <span id="historyCount" class="text-xs px-2 py-1 rounded"
+                        style="background: var(--bg-input); color: var(--text-muted);">0</span>
+                    <button onclick="clearHistory()" class="text-xs transition-colors px-2 py-1 rounded"
+                        style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        清理
+                    </button>
                 </div>
             </div>
-
-            <!-- 右侧：生成历史 -->
-            <div class="glass-panel rounded-2xl p-5 lg:col-span-2">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5" style="color: var(--accent-purple);" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        生成历史
-                    </h2>
-                    <div class="flex items-center gap-2">
-                        <span id="historyCount" class="text-xs px-2 py-1 rounded"
-                            style="background: var(--bg-input); color: var(--text-muted);">0</span>
-                        <button onclick="clearHistory()" class="text-xs transition-colors px-2 py-1 rounded"
-                            style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
-                            清理
-                        </button>
-                    </div>
-                </div>
-                <div id="historyContainer" class="history-container custom-scrollbar">
-                    <div class="text-center py-8 text-sm flex-shrink-0 w-full" style="color: var(--text-muted);">
-                        暂无历史记录
-                    </div>
+            <div id="historyContainer" class="history-container custom-scrollbar">
+                <div class="text-center py-8 text-sm flex-shrink-0 w-full" style="color: var(--text-muted);">
+                    暂无历史记录
                 </div>
             </div>
         </div>
@@ -1738,6 +1873,7 @@
             loadSavedConfig();
             setupPasteListener();
             setupMentionSystem();
+            setupPromptResize();
             initDB().then(() => {
                 loadHistory();
             });
@@ -2230,7 +2366,9 @@
         function closeImageModal() {
             const modal = document.getElementById('imageModal');
             modal.classList.remove('active');
-            document.body.style.overflow = '';
+            if (!document.getElementById('taskSidebar').classList.contains('active')) {
+                document.body.style.overflow = '';
+            }
         }
 
         // ==================== 图片压缩 ====================
@@ -2525,6 +2663,8 @@
             const list = document.getElementById('mentionPopupList');
             const editor = document.getElementById('prompt');
 
+            const scrollTop = editor.scrollTop;
+
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
                 savedRange = sel.getRangeAt(0).cloneRange();
@@ -2541,6 +2681,7 @@
             isMentionPopupOpen = true;
 
             editor.focus();
+            editor.scrollTop = scrollTop;
         }
 
         function positionPopup() {
@@ -2548,12 +2689,15 @@
             const editor = document.getElementById('prompt');
             const editorRect = editor.getBoundingClientRect();
 
-            const sel = window.getSelection();
             let cursorX = editorRect.left + 20;
             let cursorY = editorRect.top + 50;
 
-            if (sel.rangeCount > 0) {
-                const range = sel.getRangeAt(0);
+            if (editingChip) {
+                const chipRect = editingChip.getBoundingClientRect();
+                cursorX = chipRect.left;
+                cursorY = chipRect.bottom + 5;
+            } else if (window.getSelection().rangeCount > 0) {
+                const range = window.getSelection().getRangeAt(0);
                 const rects = range.getClientRects();
                 if (rects.length > 0) {
                     const rect = rects[rects.length - 1];
@@ -2572,8 +2716,8 @@
                 cursorY = editorRect.top - popupHeight - 5;
             }
 
-            popup.style.left = (cursorX - editorRect.left) + 'px';
-            popup.style.top = (cursorY - editorRect.top) + 'px';
+            popup.style.left = cursorX + 'px';
+            popup.style.top = cursorY + 'px';
         }
 
         function renderMentionList() {
@@ -2642,6 +2786,7 @@
 
         function selectImageForInsert(index) {
             const editor = document.getElementById('prompt');
+            const scrollTop = editor.scrollTop;
 
             const chipInner = `@img${index + 1} <svg style="width:12px;height:12px;margin-left:2px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
 
@@ -2696,6 +2841,7 @@
                 }
             }
 
+            editor.scrollTop = scrollTop;
             savedRange = null;
             closeMentionPopup();
         }
@@ -3038,6 +3184,7 @@
                 jpegQuality: document.getElementById('jpegQuality').value,
                 maxConcurrency: document.getElementById('maxConcurrency').value,
                 pollInterval: document.getElementById('pollInterval').value,
+                taskLimit: document.getElementById('taskLimit').value,
                 timestamp: new Date().toISOString()
             };
         }
@@ -3068,6 +3215,7 @@
             document.getElementById('jpegQuality').value = config?.jpegQuality || '0.9';
             document.getElementById('maxConcurrency').value = config?.maxConcurrency || '3';
             document.getElementById('pollInterval').value = config?.pollInterval || '5';
+            document.getElementById('taskLimit').value = config?.taskLimit || '50';
 
             const providerSettings = {
                 gemini: {
@@ -3154,6 +3302,7 @@
             };
             
             taskQueue.push(task);
+            enforceTaskLimit();
             processTaskQueue();
             return localTaskId;
         }
@@ -3468,16 +3617,15 @@
 
         // 更新任务UI
         function updateTaskUI(changedTask) {
-            const taskContainer = document.getElementById('taskContainer');
-            const taskCountEl = document.getElementById('taskCount');
+            const taskSidebarBody = document.getElementById('taskSidebarBody');
+            const taskSidebarCount = document.getElementById('taskSidebarCount');
+            const taskFloatBadge = document.getElementById('taskFloatBadge');
             const btnText = document.getElementById('btnText');
             const loader = document.getElementById('btnLoader');
-            
-            const pendingCount = taskQueue.filter(t => t.status === 'pending').length;
+
             const runningCount = taskQueue.filter(t => t.status === 'submitting' || t.status === 'polling').length;
-            const completedCount = taskQueue.filter(t => t.status === 'completed').length;
-            const failedCount = taskQueue.filter(t => t.status === 'failed').length;
-            
+            const pendingCount = taskQueue.filter(t => t.status === 'pending').length;
+
             // 更新按钮状态
             if (runningCount > 0) {
                 btnText.textContent = '生成中...';
@@ -3489,19 +3637,27 @@
                 btnText.textContent = '生成图像';
                 loader.classList.add('hidden');
             }
-            
-            // 更新任务数量
-            taskCountEl.textContent = taskQueue.length;
-            
-            // 渲染任务列表
+
+            // 更新浮动按钮徽章（仅显示运行中数量）
+            taskFloatBadge.textContent = runningCount > 0 ? runningCount : '';
+            if (runningCount > 0) {
+                taskFloatBadge.classList.remove('idle');
+            } else {
+                taskFloatBadge.classList.add('idle');
+            }
+
+            // 更新侧边栏
+            taskSidebarCount.textContent = taskQueue.length;
+
             if (taskQueue.length === 0) {
-                taskContainer.innerHTML = `
+                taskSidebarBody.innerHTML = `
                     <div class="text-center py-8 text-sm" style="color: var(--text-muted);">
                         暂无任务
                     </div>
                 `;
+                document.getElementById('taskSidebarStatus').textContent = '就绪';
             } else {
-                taskContainer.innerHTML = taskQueue.slice().reverse().map(task => {
+                taskSidebarBody.innerHTML = taskQueue.slice().reverse().map(task => {
                     const isSelected = task.id === selectedTaskId;
                     const progress = parseInt(task.progress) || 0;
                     const statusText = {
@@ -3511,9 +3667,9 @@
                         'completed': '已完成',
                         'failed': '失败'
                     }[task.status] || task.status;
-                    
+
                     return `
-                        <div class="task-item ${task.status} ${isSelected ? 'selected' : ''}" 
+                        <div class="task-item ${task.status} ${isSelected ? 'selected' : ''}"
                              onclick="selectTask('${task.id}')">
                             <div class="task-header">
                                 <span class="task-id">${task.id.slice(-8)}</span>
@@ -3533,13 +3689,15 @@
                         </div>
                     `;
                 }).join('');
+
+                document.getElementById('taskSidebarStatus').textContent = runningCount > 0 ? `运行中 ${runningCount}` : pendingCount > 0 ? `等待中 ${pendingCount}` : '全部完成';
             }
-            
+
             // 如果有选中的任务，显示调试信息
             if (selectedTaskId) {
                 renderTaskDebugPanel();
             }
-            
+
             // 如果有状态变化，显示消息
             if (changedTask) {
                 if (changedTask.status === 'completed') {
@@ -3587,7 +3745,7 @@
                 debugPanel = document.createElement('div');
                 debugPanel.id = 'taskDebugPanel';
                 debugPanel.className = 'task-debug-panel';
-                document.getElementById('taskContainer').parentNode.appendChild(debugPanel);
+                document.getElementById('taskSidebarBody').appendChild(debugPanel);
             }
 
             const logHtml = task.debugLog.map(entry => {
@@ -3642,6 +3800,103 @@
             
             updateTaskUI();
             showMessage('任务列表已清理', 'success');
+        }
+
+        // 任务侧边栏切换
+        function toggleTaskSidebar() {
+            const sidebar = document.getElementById('taskSidebar');
+            const overlay = document.getElementById('taskSidebarOverlay');
+            const isActive = sidebar.classList.contains('active');
+            if (isActive) {
+                closeTaskSidebar();
+            } else {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeTaskSidebar() {
+            const sidebar = document.getElementById('taskSidebar');
+            const overlay = document.getElementById('taskSidebarOverlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // 提示词编辑器拖拽调节高度
+        function setupPromptResize() {
+            const editor = document.getElementById('prompt');
+            const handle = document.getElementById('promptResizeHandle');
+            if (!handle) return;
+
+            let startY, startHeight;
+
+            handle.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                startY = e.clientY;
+                startHeight = editor.offsetHeight;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                handle.style.background = 'var(--accent-blue)';
+            });
+
+            function onMouseMove(e) {
+                const delta = e.clientY - startY;
+                const newHeight = Math.max(120, startHeight + delta);
+                editor.style.height = newHeight + 'px';
+                localStorage.setItem('nanoBananaPromptHeight', newHeight);
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                handle.style.background = 'transparent';
+            }
+
+            // 恢复保存的高度
+            const savedHeight = localStorage.getItem('nanoBananaPromptHeight');
+            if (savedHeight && parseInt(savedHeight) >= 120) {
+                editor.style.height = savedHeight + 'px';
+            }
+        }
+
+        // 任务数量限制
+        function enforceTaskLimit() {
+            const limit = parseInt(document.getElementById('taskLimit').value) || 50;
+            while (taskQueue.length > limit) {
+                // 优先移除已完成/失败的任务
+                const oldestCompleted = taskQueue.findIndex(t => t.status === 'completed' || t.status === 'failed');
+                if (oldestCompleted !== -1) {
+                    if (taskQueue[oldestCompleted].pollTimer) {
+                        clearInterval(taskQueue[oldestCompleted].pollTimer);
+                    }
+                    if (taskQueue[oldestCompleted].status === 'submitting' || taskQueue[oldestCompleted].status === 'polling') {
+                        runningTaskCount = Math.max(0, runningTaskCount - 1);
+                    }
+                    taskQueue.splice(oldestCompleted, 1);
+                    continue;
+                }
+                // 其次移除等待中的任务
+                const oldestPending = taskQueue.findIndex(t => t.status === 'pending');
+                if (oldestPending !== -1) {
+                    taskQueue.splice(oldestPending, 1);
+                    continue;
+                }
+                // 最后移除运行中的任务
+                if (taskQueue.length > limit) {
+                    const oldestRunning = taskQueue.findIndex(t => t.status === 'submitting' || t.status === 'polling');
+                    if (oldestRunning !== -1) {
+                        if (taskQueue[oldestRunning].pollTimer) {
+                            clearInterval(taskQueue[oldestRunning].pollTimer);
+                        }
+                        runningTaskCount = Math.max(0, runningTaskCount - 1);
+                        taskQueue.splice(oldestRunning, 1);
+                        continue;
+                    }
+                }
+                break;
+            }
         }
 
         // HTML转义
@@ -4104,7 +4359,9 @@
         function closeCropHistoryPicker(event) {
             const picker = document.getElementById('cropHistoryPicker');
             picker.classList.remove('active');
-            document.body.style.overflow = '';
+            if (!document.getElementById('taskSidebar').classList.contains('active')) {
+                document.body.style.overflow = '';
+            }
         }
     </script>
 </body>
