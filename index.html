@@ -1512,11 +1512,22 @@
                 <div class="grid grid-cols-2 gap-3 mt-4">
                     <div class="space-y-1">
                         <label class="text-xs font-medium" style="color: var(--text-muted);" id="aspectRatioLabel">宽高比</label>
-                        <select id="aspectRatio" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select"></select>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="aspectRatio" class="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none form-select"></select>
+                            <input type="number" id="customWidth" class="w-16 px-2 py-2 rounded-lg text-sm outline-none form-input hidden-param" placeholder="宽" min="1" />
+                            <span id="customSizeSeparator" class="text-sm hidden-param" style="color: var(--text-muted);">x</span>
+                            <input type="number" id="customHeight" class="w-16 px-2 py-2 rounded-lg text-sm outline-none form-input hidden-param" placeholder="高" min="1" />
+                        </div>
                     </div>
                     <div class="space-y-1" id="secondaryParamGroup">
                         <label class="text-xs font-medium" style="color: var(--text-muted);" id="secondaryParamLabel">分辨率</label>
                         <select id="resolution" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select"></select>
+                        <select id="gptImage2Quality" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select hidden-param">
+                            <option value="">默认 (Auto)</option>
+                            <option value="low">low (低)</option>
+                            <option value="medium">medium (中)</option>
+                            <option value="high">high (高)</option>
+                        </select>
                     </div>
                 </div>
 
@@ -1835,22 +1846,27 @@
                 label: 'GPT Image 2',
                 model: 'gpt-image-2',
                 requestType: 'json',
-                aspectRatioLabel: '宽高比',
+                aspectRatioLabel: '尺寸',
                 aspectRatioOptions: [
                     { value: '', label: '默认 (Auto)' },
-                    { value: '1:1', label: '1:1 (正方形)' },
-                    { value: '3:2', label: '3:2 (横向)' },
-                    { value: '2:3', label: '2:3 (纵向)' }
+                    { value: '1024x1024', label: '1024x1024 (正方形)' },
+                    { value: '1536x1024', label: '1536x1024 (横向)' },
+                    { value: '1024x1536', label: '1024x1536 (竖屏)' },
+                    { value: '2048x2048', label: '2048x2048 (2K 正方形)' },
+                    { value: '2048x1152', label: '2048x1152 (2K 横向)' },
+                    { value: '3840x2160', label: '3840x2160 (4K 横向)' },
+                    { value: '2160x3840', label: '2160x3840 (4K 竖屏)' },
+                    { value: 'custom', label: '自定义...' }
                 ],
                 secondaryParamKey: 'size',
-                secondaryParamLabel: '尺寸',
+                secondaryParamLabel: '质量',
                 secondaryOptions: [
                     { value: '', label: '默认 (Auto)' },
                     { value: '1024x1024', label: '1024x1024' },
                     { value: '1536x1024', label: '1536x1024' },
                     { value: '1024x1536', label: '1024x1536' }
                 ],
-                showSecondaryParam: false,
+                showSecondaryParam: true,
                 promptPlaceholder: '描述你想要生成的图像内容... 例如：参考 @img1 的主体和 @img2 的配色，生成一张新图'
             }
         };
@@ -1867,6 +1883,43 @@
         const STORE_NAME = 'history';
         let db = null;
 
+        function roundTo16(value) {
+            let num = parseInt(value, 10);
+            if (isNaN(num) || num <= 0) return '';
+            num = Math.round(num / 16) * 16;
+            if (num < 16) num = 16;
+            if (num > 3840) num = 3840;
+            return num;
+        }
+
+        function validateCustomSize(width, height) {
+            const w = parseInt(width, 10);
+            const h = parseInt(height, 10);
+            if (!w || !h) return '请输入自定义宽度和高度';
+
+            const maxEdge = Math.max(w, h);
+            const minEdge = Math.min(w, h);
+            const pixels = w * h;
+
+            if (w % 16 !== 0 || h % 16 !== 0) return '宽度和高度都必须是 16px 的倍数';
+            if (maxEdge > 3840) return '最大边长必须小于或等于 3840px';
+            if (maxEdge / minEdge > 3) return '长边与短边之比不得超过 3:1';
+            if (pixels < 655360) return '总像素数必须至少为 655,360';
+            if (pixels > 8294400) return '总像素数不得超过 8,294,400';
+
+            return null;
+        }
+
+        function checkCustomSize() {
+            const widthEl = document.getElementById('customWidth');
+            const heightEl = document.getElementById('customHeight');
+            if (!widthEl || !heightEl || !widthEl.value || !heightEl.value) return;
+            const error = validateCustomSize(widthEl.value, heightEl.value);
+            if (error) {
+                showMessage(error, 'error');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
             initImageGrid();
@@ -1877,6 +1930,39 @@
             initDB().then(() => {
                 loadHistory();
             });
+
+            const aspectRatioEl = document.getElementById('aspectRatio');
+            if (aspectRatioEl) {
+                aspectRatioEl.addEventListener('change', function () {
+                    const customWidth = document.getElementById('customWidth');
+                    const customHeight = document.getElementById('customHeight');
+                    const customSizeSeparator = document.getElementById('customSizeSeparator');
+                    const isCustom = this.value === 'custom';
+                    if (customWidth) customWidth.classList.toggle('hidden-param', !isCustom);
+                    if (customHeight) customHeight.classList.toggle('hidden-param', !isCustom);
+                    if (customSizeSeparator) customSizeSeparator.classList.toggle('hidden-param', !isCustom);
+                    if (isCustom && customWidth) customWidth.focus();
+                });
+            }
+
+            const customWidthEl = document.getElementById('customWidth');
+            const customHeightEl = document.getElementById('customHeight');
+            if (customWidthEl) {
+                customWidthEl.addEventListener('blur', function () {
+                    if (this.value) {
+                        this.value = roundTo16(this.value);
+                        checkCustomSize();
+                    }
+                });
+            }
+            if (customHeightEl) {
+                customHeightEl.addEventListener('blur', function () {
+                    if (this.value) {
+                        this.value = roundTo16(this.value);
+                        checkCustomSize();
+                    }
+                });
+            }
         });
 
         function getActiveProfile() {
@@ -1896,6 +1982,12 @@
                 config.resolution = '';
             }
 
+            if (providerId === 'gpt-image-2') {
+                config.quality = '';
+                config.customWidth = '';
+                config.customHeight = '';
+            }
+
             return config;
         }
 
@@ -1911,10 +2003,26 @@
         }
 
         function collectProviderSettings() {
-            return {
+            const settings = {
                 aspectRatio: document.getElementById('aspectRatio').value,
                 [getActiveProfile().secondaryParamKey]: document.getElementById('resolution').value
             };
+
+            if (activeProvider === 'gpt-image-2') {
+                const qualityEl = document.getElementById('gptImage2Quality');
+                const customWidthEl = document.getElementById('customWidth');
+                const customHeightEl = document.getElementById('customHeight');
+
+                settings.quality = qualityEl?.value || '';
+                if (customWidthEl && !customWidthEl.classList.contains('hidden-param')) {
+                    settings.customWidth = customWidthEl.value;
+                }
+                if (customHeightEl && !customHeightEl.classList.contains('hidden-param')) {
+                    settings.customHeight = customHeightEl.value;
+                }
+            }
+
+            return settings;
         }
 
         function applyProviderSettings(providerId, settings = {}) {
@@ -1930,6 +2038,31 @@
             buildSelectOptions(document.getElementById('aspectRatio'), profile.aspectRatioOptions, normalized.aspectRatio);
             buildSelectOptions(document.getElementById('resolution'), profile.secondaryOptions, normalized[profile.secondaryParamKey]);
             document.getElementById('secondaryParamGroup').classList.toggle('hidden-param', !profile.showSecondaryParam);
+
+            const customWidth = document.getElementById('customWidth');
+            const customHeight = document.getElementById('customHeight');
+            const customSizeSeparator = document.getElementById('customSizeSeparator');
+            const isCustomSize = normalized.aspectRatio === 'custom';
+            if (customWidth) {
+                customWidth.classList.toggle('hidden-param', !isCustomSize);
+                customWidth.value = isCustomSize ? (settings.customWidth || '') : '';
+            }
+            if (customHeight) {
+                customHeight.classList.toggle('hidden-param', !isCustomSize);
+                customHeight.value = isCustomSize ? (settings.customHeight || '') : '';
+            }
+            if (customSizeSeparator) customSizeSeparator.classList.toggle('hidden-param', !isCustomSize);
+
+            const resolutionEl = document.getElementById('resolution');
+            const qualityEl = document.getElementById('gptImage2Quality');
+            if (resolutionEl) resolutionEl.classList.toggle('hidden-param', providerId === 'gpt-image-2');
+            if (qualityEl) {
+                qualityEl.classList.toggle('hidden-param', providerId !== 'gpt-image-2');
+                if (providerId === 'gpt-image-2') qualityEl.value = settings.quality || '';
+            }
+            document.getElementById('secondaryParamLabel').textContent = providerId === 'gpt-image-2'
+                ? '质量'
+                : profile.secondaryParamLabel;
 
             const promptEditor = document.getElementById('prompt');
             if (promptEditor) {
@@ -3296,9 +3429,11 @@
                 result: null,
                 error: null,
                 startTime: Date.now(),
+                endTime: null,
                 pollTimer: null,
                 pollAttempts: 0,
-                debugLog: []
+                debugLog: [],
+                renderedLogCount: 0
             };
             
             taskQueue.push(task);
@@ -3332,9 +3467,32 @@
                 console.error('Task execution error:', error);
                 task.status = 'failed';
                 task.error = error.message;
+                task.endTime = Date.now();
                 runningTaskCount--;
                 updateTaskUI(task);
                 processTaskQueue(); // 尝试处理下一个任务
+            }
+        }
+
+        function formatTaskDuration(ms) {
+            if (!Number.isFinite(ms) || ms < 0) return '0秒';
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            if (minutes <= 0) return `${seconds}秒`;
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            if (hours <= 0) return `${minutes}分${seconds}秒`;
+            return `${hours}时${remainingMinutes}分${seconds}秒`;
+        }
+
+        function getTaskDurationText(task) {
+            return formatTaskDuration((task.endTime || Date.now()) - task.startTime);
+        }
+
+        function markTaskFinished(task) {
+            if (!task.endTime) {
+                task.endTime = Date.now();
             }
         }
 
@@ -3433,14 +3591,19 @@
         async function submitGptImageTask(task, currentImages) {
             const payload = {
                 model: task.model,
-                prompt: task.prompt
+                prompt: task.prompt,
+                response_format: 'url'
             };
 
             if (task.params?.aspectRatio) {
-                payload.aspect_ratio = task.params.aspectRatio;
+                if (task.params.aspectRatio === 'custom' && task.params?.customWidth && task.params?.customHeight) {
+                    payload.size = `${task.params.customWidth}x${task.params.customHeight}`;
+                } else if (task.params.aspectRatio !== 'custom') {
+                    payload.size = task.params.aspectRatio;
+                }
             }
-            if (task.params?.size) {
-                payload.size = task.params.size;
+            if (task.params?.quality) {
+                payload.quality = task.params.quality;
             }
             if (currentImages.length > 0) {
                 payload.image = await Promise.all(currentImages.map(file => blobToBase64(file)));
@@ -3507,6 +3670,7 @@
                         task.status = 'completed';
                         task.result = taskData.data || data;
                         task.progress = '100%';
+                        markTaskFinished(task);
                         runningTaskCount--;
                         addDebugLog(task, 'success', '任务完成');
 
@@ -3523,6 +3687,7 @@
                         clearInterval(task.pollTimer);
                         task.status = 'failed';
                         task.error = taskData.fail_reason || '任务生成失败';
+                        markTaskFinished(task);
                         runningTaskCount--;
                         addDebugLog(task, 'fail', `失败: ${task.error}`);
                         updateTaskUI(task);
@@ -3538,6 +3703,7 @@
                         clearInterval(task.pollTimer);
                         task.status = 'failed';
                         task.error = '任务超时，请稍后在历史记录中查看结果';
+                        markTaskFinished(task);
                         runningTaskCount--;
                         addDebugLog(task, 'fail', '任务超时');
                         updateTaskUI(task);
@@ -3547,6 +3713,7 @@
                     clearInterval(task.pollTimer);
                     task.status = 'failed';
                     task.error = error.message;
+                    markTaskFinished(task);
                     runningTaskCount--;
                     addDebugLog(task, 'error', `轮询异常: ${error.message}`);
                     updateTaskUI(task);
@@ -3615,9 +3782,21 @@
         // 当前选中的任务ID
         let selectedTaskId = null;
 
+        function ensureTaskListContainer() {
+            const taskSidebarBody = document.getElementById('taskSidebarBody');
+            let taskList = document.getElementById('taskListContainer');
+            if (!taskList) {
+                taskSidebarBody.innerHTML = '';
+                taskList = document.createElement('div');
+                taskList.id = 'taskListContainer';
+                taskSidebarBody.appendChild(taskList);
+            }
+            return taskList;
+        }
+
         // 更新任务UI
         function updateTaskUI(changedTask) {
-            const taskSidebarBody = document.getElementById('taskSidebarBody');
+            const taskListContainer = ensureTaskListContainer();
             const taskSidebarCount = document.getElementById('taskSidebarCount');
             const taskFloatBadge = document.getElementById('taskFloatBadge');
             const btnText = document.getElementById('btnText');
@@ -3650,14 +3829,17 @@
             taskSidebarCount.textContent = taskQueue.length;
 
             if (taskQueue.length === 0) {
-                taskSidebarBody.innerHTML = `
+                taskListContainer.innerHTML = `
                     <div class="text-center py-8 text-sm" style="color: var(--text-muted);">
                         暂无任务
                     </div>
                 `;
+                selectedTaskId = null;
+                const debugPanel = document.getElementById('taskDebugPanel');
+                if (debugPanel) debugPanel.remove();
                 document.getElementById('taskSidebarStatus').textContent = '就绪';
             } else {
-                taskSidebarBody.innerHTML = taskQueue.slice().reverse().map(task => {
+                taskListContainer.innerHTML = taskQueue.slice().reverse().map(task => {
                     const isSelected = task.id === selectedTaskId;
                     const progress = parseInt(task.progress) || 0;
                     const statusText = {
@@ -3667,6 +3849,7 @@
                         'completed': '已完成',
                         'failed': '失败'
                     }[task.status] || task.status;
+                    const durationText = getTaskDurationText(task);
 
                     return `
                         <div class="task-item ${task.status} ${isSelected ? 'selected' : ''}"
@@ -3675,7 +3858,7 @@
                                 <span class="task-id">${task.id.slice(-8)}</span>
                                 <span class="task-status ${task.status}">${statusText}</span>
                             </div>
-                            <div class="task-progress-text" style="margin-bottom: 6px;">${escapeHtml(MODEL_PROFILES[task.providerId]?.label || task.model)}</div>
+                            <div class="task-progress-text" style="margin-bottom: 6px;">${escapeHtml(MODEL_PROFILES[task.providerId]?.label || task.model)} · 耗时 ${durationText}</div>
                             <div class="task-prompt" title="${escapeHtml(task.prompt)}">${escapeHtml(task.prompt)}</div>
                             ${task.status === 'polling' || task.status === 'submitting' ? `
                                 <div class="task-progress-bar">
@@ -3711,13 +3894,25 @@
         // 选择任务
         function selectTask(taskId) {
             selectedTaskId = taskId;
+            const task = taskQueue.find(t => t.id === selectedTaskId);
+            if (task) task.renderedLogCount = 0;
             updateTaskUI();
+        }
+
+        function createDebugLogEntryHtml(entry, typeColors) {
+            const color = typeColors[entry.type] || '#6b7280';
+            return `<div class="debug-log-entry"><span class="debug-log-ts">${entry.ts}</span><span class="debug-log-type" style="color:${color};border-color:${color}">${entry.type}</span><span class="debug-log-content">${escapeHtml(entry.content)}</span></div>`;
         }
 
         // 渲染任务调试面板
         function renderTaskDebugPanel() {
             const task = taskQueue.find(t => t.id === selectedTaskId);
-            if (!task) return;
+            if (!task) {
+                const debugPanel = document.getElementById('taskDebugPanel');
+                if (debugPanel) debugPanel.remove();
+                selectedTaskId = null;
+                return;
+            }
 
             const typeColors = {
                 submit: '#3b82f6',
@@ -3736,36 +3931,52 @@
                 `模型: ${task.model}`,
                 `状态: ${task.status}`,
                 `进度: ${task.progress}`,
-                `轮询: ${task.pollAttempts}次`
+                `轮询: ${task.pollAttempts}次`,
+                `耗时: ${getTaskDurationText(task)}`
             ];
 
             // 检查是否已存在调试面板
             let debugPanel = document.getElementById('taskDebugPanel');
-            if (!debugPanel) {
+            const isNewPanel = !debugPanel || debugPanel.dataset.taskId !== task.id;
+            if (isNewPanel) {
+                if (debugPanel) debugPanel.remove();
                 debugPanel = document.createElement('div');
                 debugPanel.id = 'taskDebugPanel';
                 debugPanel.className = 'task-debug-panel';
+                debugPanel.dataset.taskId = task.id;
                 document.getElementById('taskSidebarBody').appendChild(debugPanel);
+                task.renderedLogCount = 0;
+                debugPanel.innerHTML = `
+                    <div class="task-debug-header">
+                        <span>调试日志</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span class="task-debug-meta" style="font-size:10px;color:var(--text-muted);font-weight:400;"></span>
+                            <button onclick="closeTaskDebugPanel()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">✕</button>
+                        </div>
+                    </div>
+                    <div class="task-debug-content custom-scrollbar"></div>
+                `;
             }
 
-            const logHtml = task.debugLog.map(entry => {
-                const color = typeColors[entry.type] || '#6b7280';
-                return `<div class="debug-log-entry"><span class="debug-log-ts">${entry.ts}</span><span class="debug-log-type" style="color:${color};border-color:${color}">${entry.type}</span><span class="debug-log-content">${escapeHtml(entry.content)}</span></div>`;
-            }).join('');
-
-            debugPanel.innerHTML = `
-                <div class="task-debug-header">
-                    <span>调试日志</span>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <span style="font-size:10px;color:var(--text-muted);font-weight:400;">${meta.join(' · ')}</span>
-                        <button onclick="closeTaskDebugPanel()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">✕</button>
-                    </div>
-                </div>
-                <div class="task-debug-content custom-scrollbar">${logHtml || '<div style="color:var(--text-muted);text-align:center;padding:8px;">暂无日志</div>'}</div>
-            `;
-
+            const metaEl = debugPanel.querySelector('.task-debug-meta');
             const content = debugPanel.querySelector('.task-debug-content');
-            content.scrollTop = content.scrollHeight;
+            if (metaEl) metaEl.textContent = meta.join(' · ');
+
+            if (task.debugLog.length === 0) {
+                if (!content.querySelector('.debug-log-empty')) {
+                    content.innerHTML = '<div class="debug-log-empty" style="color:var(--text-muted);text-align:center;padding:8px;">暂无日志</div>';
+                }
+                return;
+            }
+
+            const emptyEl = content.querySelector('.debug-log-empty');
+            if (emptyEl) emptyEl.remove();
+
+            const nextEntries = task.debugLog.slice(task.renderedLogCount);
+            if (nextEntries.length > 0) {
+                content.insertAdjacentHTML('beforeend', nextEntries.map(entry => createDebugLogEntryHtml(entry, typeColors)).join(''));
+                task.renderedLogCount = task.debugLog.length;
+            }
         }
 
         // 关闭任务调试面板
@@ -3921,6 +4132,14 @@
             if (!prompt) {
                 showMessage('请输入提示词', 'error');
                 return;
+            }
+
+            if (activeProvider === 'gpt-image-2' && params.aspectRatio === 'custom') {
+                const sizeError = validateCustomSize(params.customWidth, params.customHeight);
+                if (sizeError) {
+                    showMessage(sizeError, 'error');
+                    return;
+                }
             }
 
             const validImages = imageFiles.filter(f => f !== null);
