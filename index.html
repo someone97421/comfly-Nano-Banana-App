@@ -1078,6 +1078,10 @@
             transition: all 0.3s ease;
         }
 
+        .task-float-btn.shifted {
+            right: 404px;
+        }
+
         .task-float-btn:hover {
             transform: scale(1.08);
             box-shadow: 0 12px 32px rgba(59, 130, 246, 0.55);
@@ -1109,22 +1113,17 @@
             background: var(--accent-green);
         }
 
+        /* 主内容区侧边栏开启时的适配 */
+        body.sidebar-open {
+            padding-right: 380px;
+            transition: padding-right 0.3s ease;
+        }
+
+        body {
+            transition: padding-right 0.3s ease;
+        }
+
         /* 右侧任务侧边栏 */
-        .task-sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 9996;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .task-sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
         .task-sidebar {
             position: fixed;
             top: 0;
@@ -1139,11 +1138,11 @@
             transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
-            box-shadow: -8px 0 30px rgba(0, 0, 0, 0.3);
         }
 
         .task-sidebar.active {
             transform: translateX(0);
+            box-shadow: -8px 0 30px rgba(0, 0, 0, 0.3);
         }
 
         .task-sidebar-header {
@@ -1182,32 +1181,6 @@
         <span id="taskFloatBadge" class="task-float-badge"></span>
     </button>
 
-    <!-- 任务侧边栏遮罩 -->
-    <div id="taskSidebarOverlay" class="task-sidebar-overlay" onclick="closeTaskSidebar()"></div>
-
-    <!-- 任务侧边栏 -->
-    <div id="taskSidebar" class="task-sidebar">
-        <div class="task-sidebar-header">
-            <h2 class="text-lg font-semibold flex items-center gap-2">
-                <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                任务列表
-            </h2>
-            <div class="flex items-center gap-2">
-                <span id="taskSidebarCount" class="text-xs px-2 py-1 rounded" style="background: var(--bg-input); color: var(--text-muted);">0</span>
-                <button onclick="closeTaskSidebar()" class="text-sm px-2 py-1 rounded hover:bg-opacity-50 transition-colors" style="color: var(--text-muted); background: var(--bg-input);">✕</button>
-            </div>
-        </div>
-        <div id="taskSidebarBody" class="task-sidebar-body custom-scrollbar">
-            <div class="text-center py-8 text-sm" style="color: var(--text-muted);">暂无任务</div>
-        </div>
-        <div class="task-sidebar-footer">
-            <span class="text-xs" style="color: var(--text-muted);" id="taskSidebarStatus">就绪</span>
-            <button onclick="clearAllTasks()" class="text-xs transition-colors px-3 py-1.5 rounded" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">清理全部</button>
-        </div>
-    </div>
-
     <!-- 弹出式引用选择面板 -->
     <div id="mentionPopup" class="mention-popup">
         <div class="mention-popup-header">
@@ -1229,7 +1202,7 @@
         <img id="modalImage" src="" alt="Preview" onclick="event.stopPropagation()">
     </div>
 
-    <div class="max-w-7xl mx-auto space-y-4">
+    <div id="mainContent" class="max-w-7xl mx-auto space-y-4">
         <!-- 标题 -->
         <div class="text-center space-y-2 mb-6">
             <h1
@@ -1534,7 +1507,7 @@
                 <button onclick="generateImage()" id="generateBtn"
                     class="w-full mt-4 py-3 rounded-xl font-semibold text-base shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                     style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);">
-                    <span id="btnText">生成图像</span>
+                    <span id="btnText">添加队列</span>
                     <div id="btnLoader" class="loader hidden"></div>
                 </button>
 
@@ -1789,6 +1762,29 @@
             </div>
         </div>
     </div>
+
+    <!-- 任务侧边栏 -->
+    <div id="taskSidebar" class="task-sidebar">
+            <div class="task-sidebar-header">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5" style="color: var(--accent-blue);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    任务列表
+                </h2>
+                <div class="flex items-center gap-2">
+                    <span id="taskSidebarCount" class="text-xs px-2 py-1 rounded" style="background: var(--bg-input); color: var(--text-muted);">0</span>
+                    <button onclick="closeTaskSidebar()" class="text-sm px-2 py-1 rounded hover:bg-opacity-50 transition-colors" style="color: var(--text-muted); background: var(--bg-input);">✕</button>
+                </div>
+            </div>
+            <div id="taskSidebarBody" class="task-sidebar-body custom-scrollbar">
+                <div class="text-center py-8 text-sm" style="color: var(--text-muted);">暂无任务</div>
+            </div>
+            <div class="task-sidebar-footer">
+                <span class="text-xs" style="color: var(--text-muted);" id="taskSidebarStatus">就绪</span>
+                <button onclick="clearAllTasks()" class="text-xs transition-colors px-3 py-1.5 rounded" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">清理全部</button>
+            </div>
+        </div>
 
     <script>
         // Global state
@@ -3807,13 +3803,13 @@
 
             // 更新按钮状态
             if (runningCount > 0) {
-                btnText.textContent = '生成中...';
+                btnText.textContent = `添加队列 (${runningCount} 个任务进行中)`;
                 loader.classList.remove('hidden');
             } else if (pendingCount > 0) {
-                btnText.textContent = '等待中...';
+                btnText.textContent = '添加队列';
                 loader.classList.remove('hidden');
             } else {
-                btnText.textContent = '生成图像';
+                btnText.textContent = '添加队列';
                 loader.classList.add('hidden');
             }
 
@@ -4016,24 +4012,41 @@
         // 任务侧边栏切换
         function toggleTaskSidebar() {
             const sidebar = document.getElementById('taskSidebar');
-            const overlay = document.getElementById('taskSidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
             const isActive = sidebar.classList.contains('active');
             if (isActive) {
                 closeTaskSidebar();
             } else {
                 sidebar.classList.add('active');
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
+                adjustMainContentForSidebar(true);
             }
         }
 
         function closeTaskSidebar() {
             const sidebar = document.getElementById('taskSidebar');
-            const overlay = document.getElementById('taskSidebarOverlay');
             sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
+            adjustMainContentForSidebar(false);
         }
+
+        function adjustMainContentForSidebar(opening) {
+            const floatBtn = document.getElementById('taskFloatBtn');
+            const sidebarWidth = 380;
+
+            if (opening) {
+                document.body.classList.add('sidebar-open');
+                floatBtn.classList.add('shifted');
+            } else {
+                document.body.classList.remove('sidebar-open');
+                floatBtn.classList.remove('shifted');
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            const sidebar = document.getElementById('taskSidebar');
+            if (sidebar.classList.contains('active')) {
+                adjustMainContentForSidebar(true);
+            }
+        });
 
         // 提示词编辑器拖拽调节高度
         function setupPromptResize() {
@@ -4578,9 +4591,7 @@
         function closeCropHistoryPicker(event) {
             const picker = document.getElementById('cropHistoryPicker');
             picker.classList.remove('active');
-            if (!document.getElementById('taskSidebar').classList.contains('active')) {
-                document.body.style.overflow = '';
-            }
+            document.body.style.overflow = '';
         }
     </script>
 </body>
