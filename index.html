@@ -1946,9 +1946,8 @@
                         <label class="text-xs font-medium" style="color: var(--text-muted);" id="secondaryParamLabel">分辨率</label>
                         <select id="resolution" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select"></select>
                         <select id="gptImage2Quality" class="w-full px-3 py-2 rounded-lg text-sm outline-none form-select hidden-param">
-                            <option value="">默认 (Auto)</option>
                             <option value="low">low (低)</option>
-                            <option value="medium">medium (中)</option>
+                            <option value="medium" selected>medium (中)</option>
                             <option value="high">high (高)</option>
                         </select>
                     </div>
@@ -2283,7 +2282,6 @@
                 requestType: 'multipart',
                 aspectRatioLabel: '宽高比',
                 aspectRatioOptions: [
-                    { value: '', label: '默认 (Default)' },
                     { value: '1:1', label: '1:1 (正方形)' },
                     { value: '2:3', label: '2:3 (纵向)' },
                     { value: '3:2', label: '3:2 (横向)' },
@@ -2302,12 +2300,13 @@
                 secondaryParamKey: 'resolution',
                 secondaryParamLabel: '分辨率',
                 secondaryOptions: [
-                    { value: '', label: '默认 (Auto)' },
                     { value: '1K', label: '1K' },
                     { value: '2K', label: '2K' },
                     { value: '4K', label: '4K' }
                 ],
                 showSecondaryParam: true,
+                defaultAspectRatio: '9:16',
+                defaultSecondary: '2K',
                 promptPlaceholder: '描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中'
             },
             'gpt-image-2': {
@@ -2318,12 +2317,12 @@
                 requestType: 'json',
                 aspectRatioLabel: '尺寸',
                 aspectRatioOptions: [
-                    { value: '', label: '默认 (Auto)' },
                     { value: '1024x1024', label: '1024x1024 (正方形)' },
                     { value: '1536x1024', label: '1536x1024 (横向)' },
                     { value: '1024x1536', label: '1024x1536 (竖屏)' },
                     { value: '2048x2048', label: '2048x2048 (2K 正方形)' },
-                    { value: '2048x1152', label: '2048x1152 (2K 横向)' },
+                    { value: '2752x1536', label: '2752x1536 (2K 横向)' },
+                    { value: '1536x2752', label: '1536x2752 (2K 竖屏)' },
                     { value: '3840x2160', label: '3840x2160 (4K 横向)' },
                     { value: '2160x3840', label: '2160x3840 (4K 竖屏)' },
                     { value: 'custom', label: '自定义...' }
@@ -2331,12 +2330,13 @@
                 secondaryParamKey: 'size',
                 secondaryParamLabel: '质量',
                 secondaryOptions: [
-                    { value: '', label: '默认 (Auto)' },
                     { value: '1024x1024', label: '1024x1024' },
                     { value: '1536x1024', label: '1536x1024' },
                     { value: '1024x1536', label: '1024x1536' }
                 ],
                 showSecondaryParam: true,
+                defaultAspectRatio: '1536x2752',
+                defaultSecondary: 'medium',
                 promptPlaceholder: '描述你想要生成的图像内容... 例如：参考 @img1 的主体和 @img2 的配色，生成一张新图'
             }
         };
@@ -2457,7 +2457,7 @@
             }
 
             if (providerId === 'gpt-image-2') {
-                config.quality = '';
+                config.quality = MODEL_PROFILES['gpt-image-2'].defaultSecondary;
                 config.customWidth = '';
                 config.customHeight = '';
             }
@@ -2465,13 +2465,16 @@
             return config;
         }
 
-        function buildSelectOptions(selectEl, options, selectedValue = '') {
+        function buildSelectOptions(selectEl, options, selectedValue = '', defaultValue = '') {
             if (!selectEl) return;
             selectEl.innerHTML = options.map(option =>
                 `<option value="${option.value}">${option.label}</option>`
             ).join('');
-            selectEl.value = selectedValue;
-            if (selectEl.value !== selectedValue) {
+            if (selectedValue && options.some(o => o.value === selectedValue)) {
+                selectEl.value = selectedValue;
+            } else if (defaultValue && options.some(o => o.value === defaultValue)) {
+                selectEl.value = defaultValue;
+            } else {
                 selectEl.value = options[0]?.value || '';
             }
         }
@@ -2509,8 +2512,8 @@
             document.getElementById('aspectRatioLabel').textContent = profile.aspectRatioLabel;
             document.getElementById('secondaryParamLabel').textContent = profile.secondaryParamLabel;
 
-            buildSelectOptions(document.getElementById('aspectRatio'), profile.aspectRatioOptions, normalized.aspectRatio);
-            buildSelectOptions(document.getElementById('resolution'), profile.secondaryOptions, normalized[profile.secondaryParamKey]);
+            buildSelectOptions(document.getElementById('aspectRatio'), profile.aspectRatioOptions, normalized.aspectRatio, profile.defaultAspectRatio);
+            buildSelectOptions(document.getElementById('resolution'), profile.secondaryOptions, normalized[profile.secondaryParamKey], profile.defaultSecondary);
             document.getElementById('secondaryParamGroup').classList.toggle('hidden-param', !profile.showSecondaryParam);
 
             const customWidth = document.getElementById('customWidth');
@@ -2532,7 +2535,7 @@
             if (resolutionEl) resolutionEl.classList.toggle('hidden-param', providerId === 'gpt-image-2');
             if (qualityEl) {
                 qualityEl.classList.toggle('hidden-param', providerId !== 'gpt-image-2');
-                if (providerId === 'gpt-image-2') qualityEl.value = settings.quality || '';
+                if (providerId === 'gpt-image-2') qualityEl.value = settings.quality || profile.defaultSecondary;
             }
             document.getElementById('secondaryParamLabel').textContent = providerId === 'gpt-image-2'
                 ? '质量'
