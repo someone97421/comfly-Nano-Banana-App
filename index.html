@@ -1917,8 +1917,6 @@
                                 aria-selected="true" onclick="setActiveProvider('gemini')">Gemini 3.1</button>
                             <button type="button" id="tab-gpt-image-2" class="model-tab" role="tab"
                                 aria-selected="false" onclick="setActiveProvider('gpt-image-2')">GPT Image 2</button>
-                            <button type="button" id="tab-gpt-image-2-4k" class="model-tab" role="tab"
-                                aria-selected="false" onclick="setActiveProvider('gpt-image-2-4k')">GPT Image 2 4K</button>
                         </div>
                     </div>
                 </div>
@@ -2340,36 +2338,6 @@
                 defaultAspectRatio: '1536x2752',
                 defaultSecondary: 'medium',
                 promptPlaceholder: '描述你想要生成的图像内容... 例如：参考 @img1 的主体和 @img2 的配色，生成一张新图'
-            },
-            'gpt-image-2-4k': {
-                id: 'gpt-image-2-4k',
-                tabId: 'tab-gpt-image-2-4k',
-                label: 'GPT Image 2 4K',
-                model: 'gpt-image-2-4k',
-                requestType: 'json',
-                aspectRatioLabel: '尺寸',
-                aspectRatioOptions: [
-                    { value: '1024x1024', label: '1024x1024 (正方形)' },
-                    { value: '1536x1024', label: '1536x1024 (横向)' },
-                    { value: '1024x1536', label: '1024x1536 (竖屏)' },
-                    { value: '2048x2048', label: '2048x2048 (2K 正方形)' },
-                    { value: '2752x1536', label: '2752x1536 (2K 横向)' },
-                    { value: '1536x2752', label: '1536x2752 (2K 竖屏)' },
-                    { value: '3840x2160', label: '3840x2160 (4K 横向)' },
-                    { value: '2160x3840', label: '2160x3840 (4K 竖屏)' },
-                    { value: 'custom', label: '自定义...' }
-                ],
-                secondaryParamKey: 'size',
-                secondaryParamLabel: '质量',
-                secondaryOptions: [
-                    { value: '1024x1024', label: '1024x1024' },
-                    { value: '1536x1024', label: '1536x1024' },
-                    { value: '1024x1536', label: '1024x1536' }
-                ],
-                showSecondaryParam: true,
-                defaultAspectRatio: '3840x2160',
-                defaultSecondary: 'medium',
-                promptPlaceholder: '描述你想要生成的图像内容... 例如：参考 @img1 的主体和 @img2 的配色，生成一张 4K 高清图像'
             }
         };
         
@@ -2488,8 +2456,8 @@
                 config.resolution = '';
             }
 
-            if (providerId === 'gpt-image-2' || providerId === 'gpt-image-2-4k') {
-                config.quality = MODEL_PROFILES[providerId].defaultSecondary;
+            if (providerId === 'gpt-image-2') {
+                config.quality = MODEL_PROFILES['gpt-image-2'].defaultSecondary;
                 config.customWidth = '';
                 config.customHeight = '';
             }
@@ -2517,7 +2485,7 @@
                 [getActiveProfile().secondaryParamKey]: document.getElementById('resolution').value
             };
 
-            if (activeProvider === 'gpt-image-2' || activeProvider === 'gpt-image-2-4k') {
+            if (activeProvider === 'gpt-image-2') {
                 const qualityEl = document.getElementById('gptImage2Quality');
                 const customWidthEl = document.getElementById('customWidth');
                 const customHeightEl = document.getElementById('customHeight');
@@ -2564,12 +2532,12 @@
 
             const resolutionEl = document.getElementById('resolution');
             const qualityEl = document.getElementById('gptImage2Quality');
-            if (resolutionEl) resolutionEl.classList.toggle('hidden-param', providerId === 'gpt-image-2' || providerId === 'gpt-image-2-4k');
+            if (resolutionEl) resolutionEl.classList.toggle('hidden-param', providerId === 'gpt-image-2');
             if (qualityEl) {
-                qualityEl.classList.toggle('hidden-param', providerId !== 'gpt-image-2' && providerId !== 'gpt-image-2-4k');
-                if (providerId === 'gpt-image-2' || providerId === 'gpt-image-2-4k') qualityEl.value = settings.quality || profile.defaultSecondary;
+                qualityEl.classList.toggle('hidden-param', providerId !== 'gpt-image-2');
+                if (providerId === 'gpt-image-2') qualityEl.value = settings.quality || profile.defaultSecondary;
             }
-            document.getElementById('secondaryParamLabel').textContent = (providerId === 'gpt-image-2' || providerId === 'gpt-image-2-4k')
+            document.getElementById('secondaryParamLabel').textContent = providerId === 'gpt-image-2'
                 ? '质量'
                 : profile.secondaryParamLabel;
 
@@ -4042,10 +4010,6 @@
                 'gpt-image-2': {
                     ...getProviderSettings('gpt-image-2'),
                     ...(config?.providerSettings?.['gpt-image-2'] || {})
-                },
-                'gpt-image-2-4k': {
-                    ...getProviderSettings('gpt-image-2-4k'),
-                    ...(config?.providerSettings?.['gpt-image-2-4k'] || {})
                 }
             };
 
@@ -4922,7 +4886,7 @@
                 return;
             }
 
-            if ((activeProvider === 'gpt-image-2' || activeProvider === 'gpt-image-2-4k') && params.aspectRatio === 'custom') {
+            if (activeProvider === 'gpt-image-2' && params.aspectRatio === 'custom') {
                 const sizeError = validateCustomSize(params.customWidth, params.customHeight);
                 if (sizeError) {
                     showMessage(sizeError, 'error');
