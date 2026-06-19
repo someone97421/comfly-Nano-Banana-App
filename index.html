@@ -1914,7 +1914,9 @@
                         </h2>
                         <div class="model-tabs" role="tablist" aria-label="模型切换">
                             <button type="button" id="tab-gemini" class="model-tab active" role="tab"
-                                aria-selected="true" onclick="setActiveProvider('gemini')">Gemini 3.1</button>
+                                aria-selected="true" onclick="setActiveProvider('gemini')">Nano Banana 2</button>
+                            <button type="button" id="tab-gemini-pro" class="model-tab" role="tab"
+                                aria-selected="false" onclick="setActiveProvider('gemini-pro')">Nano Banana Pro</button>
                             <button type="button" id="tab-gpt-image-2" class="model-tab" role="tab"
                                 aria-selected="false" onclick="setActiveProvider('gpt-image-2')">GPT Image 2</button>
                         </div>
@@ -2277,8 +2279,8 @@
             gemini: {
                 id: 'gemini',
                 tabId: 'tab-gemini',
-                label: 'Gemini 3.1',
-                model: 'gemini-3.1-flash-image-preview',
+                label: 'Nano Banana 2',
+                model: 'nano-banana-2',
                 requestType: 'multipart',
                 aspectRatioLabel: '宽高比',
                 aspectRatioOptions: [
@@ -2296,6 +2298,37 @@
                     { value: '4:1', label: '4:1 (Banner)' },
                     { value: '1:8', label: '1:8 (极长图)' },
                     { value: '8:1', label: '8:1 (极宽图)' }
+                ],
+                secondaryParamKey: 'resolution',
+                secondaryParamLabel: '分辨率',
+                secondaryOptions: [
+                    { value: '1K', label: '1K' },
+                    { value: '2K', label: '2K' },
+                    { value: '4K', label: '4K' }
+                ],
+                showSecondaryParam: true,
+                defaultAspectRatio: '9:16',
+                defaultSecondary: '2K',
+                promptPlaceholder: '描述你想要生成的图像内容... 例如：让 @img1 的人物站在 @img2 的场景中'
+            },
+            'gemini-pro': {
+                id: 'gemini-pro',
+                tabId: 'tab-gemini-pro',
+                label: 'Nano Banana Pro',
+                model: 'nano-banana-pro',
+                requestType: 'multipart',
+                aspectRatioLabel: '宽高比',
+                aspectRatioOptions: [
+                    { value: '1:1', label: '1:1 (正方形)' },
+                    { value: '2:3', label: '2:3 (纵向)' },
+                    { value: '3:2', label: '3:2 (横向)' },
+                    { value: '3:4', label: '3:4 (纵向)' },
+                    { value: '4:3', label: '4:3 (横向)' },
+                    { value: '4:5', label: '4:5 (纵向)' },
+                    { value: '5:4', label: '5:4 (横向)' },
+                    { value: '9:16', label: '9:16 (手机竖屏)' },
+                    { value: '16:9', label: '16:9 (宽屏)' },
+                    { value: '21:9', label: '21:9 (超宽屏)' }
                 ],
                 secondaryParamKey: 'resolution',
                 secondaryParamLabel: '分辨率',
@@ -3954,6 +3987,7 @@
         function buildConfigPayload() {
             const providerSettings = {
                 gemini: getProviderSettings('gemini'),
+                'gemini-pro': getProviderSettings('gemini-pro'),
                 'gpt-image-2': getProviderSettings('gpt-image-2')
             };
             providerSettings[activeProvider] = collectProviderSettings();
@@ -4006,6 +4040,10 @@
                 gemini: {
                     ...getProviderSettings('gemini'),
                     ...(config?.providerSettings?.gemini || {})
+                },
+                'gemini-pro': {
+                    ...getProviderSettings('gemini-pro'),
+                    ...(config?.providerSettings?.['gemini-pro'] || {})
                 },
                 'gpt-image-2': {
                     ...getProviderSettings('gpt-image-2'),
@@ -4916,19 +4954,66 @@
             });
         }
 
-        function extractImageSource(result) {
-            const resultItems = Array.isArray(result)
-                ? result
-                : Array.isArray(result?.data)
-                    ? result.data
-                    : Array.isArray(result?.data?.data)
-                        ? result.data.data
-                        : null;
-            const firstItem = resultItems?.[0];
-            if (!firstItem) return null;
-            if (firstItem.url) return firstItem.url;
-            if (firstItem.b64_json) return `data:image/png;base64,${firstItem.b64_json}`;
+        function imageUrlFromCandidate(candidate) {
+            if (!candidate) return null;
+            if (typeof candidate === 'string') {
+                const value = candidate.trim();
+                return value ? value : null;
+            }
+            const outputType = String(candidate.outputType || candidate.type || '').toLowerCase();
+            if (outputType && !/image|png|jpg|jpeg|webp|url|base64/.test(outputType)) return null;
+
+            const inlineData = candidate.inlineData || candidate.inline_data;
+            if (inlineData?.data) {
+                const mime = inlineData.mimeType || inlineData.mime_type || 'image/png';
+                return `data:${mime};base64,${inlineData.data}`;
+            }
+
+            const url = candidate.url || candidate.image_url || candidate.imageUrl || candidate.result_url || candidate.output_url;
+            if (typeof url === 'string' && url.trim()) return url.trim();
+            if (Array.isArray(candidate.image_url)) {
+                const last = candidate.image_url.filter(item => typeof item === 'string' && item.trim()).at(-1);
+                if (last) return last.trim();
+            }
+            if (candidate.b64_json) return `data:image/png;base64,${candidate.b64_json}`;
             return null;
+        }
+
+        function isDraftImageCandidate(candidate) {
+            if (!candidate || typeof candidate !== 'object') return false;
+            if (candidate.thought || candidate.draft || candidate.isDraft || candidate.is_draft) return true;
+            const marker = `${candidate.outputType || ''} ${candidate.type || ''} ${candidate.name || ''} ${candidate.label || ''}`.toLowerCase();
+            return /thought|draft|preview|progress|intermediate|temp|blur/.test(marker);
+        }
+
+        function selectFinalImageResult(candidates) {
+            const images = candidates
+                .map(candidate => ({ url: imageUrlFromCandidate(candidate), draft: isDraftImageCandidate(candidate) }))
+                .filter(item => item.url);
+            return images.filter(item => !item.draft).at(-1)?.url || images.at(-1)?.url || null;
+        }
+
+        function extractImageSource(result) {
+            const candidates = [];
+            const addItem = item => {
+                if (item !== undefined && item !== null) candidates.push(item);
+            };
+            const addArray = items => {
+                if (Array.isArray(items)) items.forEach(addItem);
+            };
+
+            addArray(Array.isArray(result) ? result : null);
+            addArray(result?.data);
+            addArray(result?.data?.data);
+            addArray(result?.data?.data?.data);
+            addArray(result?.response?.data);
+            addArray(result?.response?.data?.data);
+            addArray(result?.response?.data?.data?.data);
+            addItem(result);
+            addItem(result?.data);
+            addItem(result?.response);
+
+            return selectFinalImageResult(candidates);
         }
 
         function showMessage(msg, type) {
