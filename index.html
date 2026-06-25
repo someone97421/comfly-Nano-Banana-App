@@ -913,21 +913,23 @@
             transform: scale(1.1);
         }
 
-        /* 任务列表样式 */
         .task-list-container {
-            max-height: 300px;
             overflow-y: auto;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             gap: 8px;
+            padding-bottom: 24px;
         }
 
         .task-card {
             border-radius: 10px;
             background: var(--slot-bg);
             border: 1px solid var(--border-color);
-            overflow: hidden;
             transition: all 0.2s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .task-card:hover {
@@ -937,6 +939,8 @@
         .task-card.expanded {
             border-color: var(--accent-blue);
             background: rgba(59, 130, 246, 0.08);
+            /* overflow: visible被移到这里确保整个卡片不会截断内部自适应内容 */
+            overflow: visible;
         }
 
         .task-card.pending { border-left: 3px solid var(--text-muted); }
@@ -1037,10 +1041,14 @@
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease;
+            flex-shrink: 0;
         }
 
         .task-card.expanded .task-card-body {
-            max-height: 2000px;
+            max-height: none !important;
+            height: auto;
+            overflow: visible;
+            padding-bottom: 8px; /* 增加底部内边距 */
         }
 
         /* 任务调试信息面板 */
@@ -1063,8 +1071,9 @@
         .task-debug-content {
             font-family: monospace;
             font-size: 11px;
-            max-height: 300px;
-            overflow-y: auto;
+            max-height: none !important;
+            overflow-y: visible;
+            padding-bottom: 8px; /* 给调试内容增加内边距 */
         }
 
         .debug-log-entry {
@@ -1500,14 +1509,22 @@
             bottom: 16px;
             width: var(--global-task-sidebar-width);
             min-width: 280px;
+            height: calc(100vh - 32px);
+            height: calc(100dvh - 32px);
             z-index: 90;
             display: flex;
             flex-direction: column;
             transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+            max-height: calc(100vh - 32px);
+            max-height: calc(100dvh - 32px);
         }
 
         .task-sidebar.collapsed {
             display: none;
+        }
+
+        .task-sidebar-header {
+            flex: 0 0 auto;
         }
 
         .task-sidebar-resizer {
@@ -1582,7 +1599,10 @@
                 bottom: 16px;
                 width: auto;
                 min-width: 0;
+                height: 55vh;
+                height: 55dvh;
                 max-height: 55vh;
+                max-height: 55dvh;
             }
 
             .task-sidebar.collapsed {
@@ -1601,17 +1621,144 @@
         }
 
         .task-list-container {
-            max-height: 520px;
             overflow-y: auto;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
         .task-sidebar .task-list-container {
-            flex: 1;
-            max-height: none;
+            flex: 1 1 auto;
             min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+        }
+
+        .task-sidebar {
+            border-radius: 16px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+        }
+
+        .task-sidebar-header {
+            gap: 10px;
+            margin-bottom: 0 !important;
+            padding: 14px 14px 12px !important;
+            border-bottom: 1px solid var(--border-color);
+            background: color-mix(in srgb, var(--glass-bg) 92%, var(--bg-primary));
+        }
+
+        .task-sidebar-header h2 {
+            min-width: 0;
+            flex: 1 1 auto;
+            font-size: 15px;
+            line-height: 1.2;
+        }
+
+        .task-title-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .task-sidebar-extra {
+            flex: 0 0 auto;
+        }
+
+        .task-sidebar-extra button,
+        .task-sidebar-extra #taskCount {
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 7px;
+            line-height: 1;
+        }
+
+        .task-sidebar-body {
+            padding: 14px 14px 16px !important;
+        }
+
+        .task-sidebar .task-list-container {
+            gap: 10px;
+        }
+
+        .task-sidebar .task-card {
+            flex: 0 0 auto;
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--slot-bg) 86%, var(--bg-primary));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .task-sidebar .task-card.expanded {
+            overflow: hidden;
+            background: color-mix(in srgb, var(--slot-bg) 78%, var(--accent-blue));
+        }
+
+        .task-sidebar .task-card-header {
+            min-height: 76px;
+            padding: 11px 12px 10px;
+        }
+
+        .task-sidebar .task-header {
+            gap: 8px;
+        }
+
+        .task-sidebar .task-id {
+            letter-spacing: 0;
+        }
+
+        .task-sidebar .task-status {
+            flex: 0 0 auto;
+            border-radius: 999px;
+            padding: 3px 7px;
+            font-size: 9px;
+            letter-spacing: 0;
+        }
+
+        .task-sidebar .task-progress-text {
+            text-align: left;
+            line-height: 1.35;
+        }
+
+        .task-sidebar .task-prompt {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .task-sidebar .task-card.expanded .task-card-body {
+            max-height: 260px !important;
+            overflow: hidden;
+            padding-bottom: 0;
+        }
+
+        .task-sidebar .task-debug-panel {
+            padding: 10px 12px 12px;
+            background: color-mix(in srgb, var(--bg-input) 88%, var(--bg-primary));
+        }
+
+        .task-sidebar .task-debug-header {
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .task-sidebar .task-debug-meta {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .task-sidebar .task-debug-content {
+            max-height: 176px !important;
+            overflow-y: auto;
+            padding-right: 4px;
+            padding-bottom: 2px;
+        }
+
+        .task-sidebar .debug-log-entry {
+            padding: 5px 0;
         }
     </style>
 </head>
@@ -1773,7 +1920,7 @@
                             <div class="space-y-2">
                                 <label class="text-sm font-medium" style="color: var(--text-secondary);">API Base
                                     URL</label>
-                                <input type="text" id="baseUrl" value="https://ai.comfly.chat/v1"
+                                <input type="text" id="baseUrl" value="https://ai.comfly.org/v1"
                                     class="w-full px-4 py-2 rounded-lg text-sm form-input">
                             </div>
                             <div class="space-y-2">
@@ -2280,7 +2427,7 @@
                 id: 'gemini',
                 tabId: 'tab-gemini',
                 label: 'Nano Banana 2',
-                model: 'nano-banana-2',
+                model: 'gemini-3.1-flash-image-preview',
                 requestType: 'multipart',
                 aspectRatioLabel: '宽高比',
                 aspectRatioOptions: [
@@ -2346,7 +2493,7 @@
                 id: 'gpt-image-2',
                 tabId: 'tab-gpt-image-2',
                 label: 'GPT Image 2',
-                model: 'gpt-image-2',
+                model: 'gpt-image-2-all',
                 requestType: 'json',
                 aspectRatioLabel: '尺寸',
                 aspectRatioOptions: [
@@ -4026,7 +4173,7 @@
                 }
             }
 
-            document.getElementById('baseUrl').value = config?.baseUrl || 'https://ai.comfly.chat/v1';
+            document.getElementById('baseUrl').value = config?.baseUrl || 'https://ai.comfly.org/v1';
             document.getElementById('apiKey').value = config?.apiKey || '';
             document.getElementById('historyLimit').value = config?.historyLimit || '20';
             document.getElementById('enableCompression').checked = config?.enableCompression !== false;
@@ -5421,6 +5568,3 @@
 </body>
 
 </html>
-
-
-
